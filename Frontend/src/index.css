@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Brand tokens — RGB channels so Tailwind opacity modifiers work (bg-primary/20).
+ * Neumorphism: one base surface; depth comes from a dark + light shadow pair.
+ */
+@layer base {
+  :root {
+    --surface: 230 235 241;
+    --shadow-dark: 190 197 207;
+    --shadow-light: 255 255 255;
+    --ink: 30 41 59;
+    --muted: 100 116 139;
+    --line: 210 216 225;
+
+    --primary: 79 70 229;
+    --primary-soft: 224 222 252;
+    --success: 22 163 74;
+    --warning: 217 119 6;
+    --danger: 220 38 38;
+    /* Single-series chart fill (validated: lightness band + 3:1 vs surface) */
+    --chart-1: 79 70 229;
+
+    color-scheme: light;
+  }
+
+  [data-theme='dark'] {
+    --surface: 36 40 47;
+    --shadow-dark: 24 27 32;
+    --shadow-light: 48 54 63;
+    --ink: 226 232 240;
+    --muted: 148 163 184;
+    --line: 55 62 72;
+
+    --primary: 129 140 248;
+    --primary-soft: 55 52 105;
+    --success: 74 222 128;
+    --warning: 251 191 36;
+    --danger: 248 113 113;
+    --chart-1: 124 131 245;
+
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-base font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(var(--primary) / 0.35);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--shadow-dark));
+    border-radius: 8px;
+  }
+}
+
+@layer components {
+  .neu-card {
+    @apply rounded-neu bg-base shadow-neu;
+  }
+  .neu-inset {
+    @apply rounded-xl bg-base shadow-neu-in;
+  }
+  .neu-field {
+    @apply w-full rounded-xl bg-base px-4 py-2.5 text-sm text-ink shadow-neu-in-sm outline-none transition
+      placeholder:text-muted/70 focus:shadow-[inset_3px_3px_6px_rgb(var(--shadow-dark)),inset_-3px_-3px_6px_rgb(var(--shadow-light)),0_0_0_3px_rgb(var(--primary)/0.3)]
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}

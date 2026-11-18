@@ -1,0 +1,38 @@
+# ---- Old Joomla site (reference only, not part of the new ERP) ----
+joomla_site/
+
+# ---- Database dumps / backups (contain real student & fee data) ----
+*.sql
+*.sql.gz
+*.sql.zip
+*.dump
+*.bak
+
+# ---- Secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Dependencies & builds ----
+node_modules/
+dist/
+coverage/
+
+# ---- Uploaded files (student photos, logo, documents) ----
+Backend/uploads/images/*
+Backend/uploads/documents/*
+!Backend/uploads/**/.gitkeep
+
+# ---- Logs ----
+*.log
+logs/*
+!logs/.gitkeep
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp

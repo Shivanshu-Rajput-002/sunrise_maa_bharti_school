@@ -1,0 +1,49 @@
+{
+  "modules": {
+    "dashboard": ["view"],
+    "users": ["view", "create", "update", "delete"],
+    "roles": ["view", "create", "update", "delete"],
+    "settings": ["view", "update"],
+    "academic": ["view", "create", "update", "delete"],
+    "students": ["view", "create", "update", "delete", "promote", "import", "certificates"],
+    "attendance": ["view", "mark", "upload"],
+    "fees": ["view", "collect", "manage", "cancel"],
+    "cashbook": ["view", "create", "update", "delete"],
+    "exams": ["view", "manage", "marks"],
+    "transport": ["view", "manage"],
+    "communication": ["view", "send"],
+    "reports": ["view", "export"],
+    "portal": ["view"]
+  },
+  "roles": {
+    "super_admin": { "name": "Super Admin", "permissions": "*" },
+    "management": {
+      "name": "Management",
+      "permissions": [
+        "dashboard.*", "academic.view", "students.view", "attendance.view", "fees.view",
+        "cashbook.view", "exams.view", "transport.view", "communication.*", "reports.*", "settings.view"
+      ]
+    },
+    "accountant": {
+      "name": "Accountant",
+      "permissions": ["dashboard.view", "students.view", "fees.*", "cashbook.*", "transport.view", "reports.*"]
+    },
+    "teacher": {
+      "name": "Teacher",
+      "permissions": [
+        "dashboard.view", "students.view", "attendance.*", "exams.view", "exams.marks", "communication.view"
+      ]
+    },
+    "admission": {
+      "name": "Admission Staff",
+      "permissions": [
+        "dashboard.view", "academic.view", "students.view", "students.create", "students.update",
+        "students.import", "students.certificates", "fees.view", "transport.view"
+      ]
+    },
+    "parent": {
+      "name": "Parent",
+      "permissions": ["portal.view"]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+// Saare backend endpoints ek jagah
+export const apiRoutes = {
+  health: '/health',
+  auth: {
+    loginOptions: '/auth/login-options',
+    login: '/auth/login',
+    refresh: '/auth/refresh',
+    logout: '/auth/logout',
+    me: '/auth/me',
+    changePassword: '/auth/change-password',
+  },
+  academic: {
+    sessions: '/academic/sessions',
+    sessionsAll: '/academic/sessions/all',
+    session: (id) => `/academic/sessions/${id}`,
+    setCurrentSession: (id) => `/academic/sessions/${id}/set-current`,
+    mediums: '/academic/mediums',
+    classes: '/academic/classes',
+    class: (id) => `/academic/classes/${id}`,
+    sections: '/academic/sections',
+    section: (id) => `/academic/sections/${id}`,
+    subjects: '/academic/subjects',
+    subject: (id) => `/academic/subjects/${id}`,
+  },
+  admin: {
+    users: '/admin/users',
+    user: (id) => `/admin/users/${id}`,
+    roles: '/admin/roles',
+    role: (id) => `/admin/roles/${id}`,
+    rolePermissions: (id) => `/admin/roles/${id}/permissions`,
+    permissions: '/admin/permissions',
+    auditLogs: '/admin/audit-logs',
+  },
+  students: {
+    list: '/students',
+    stats: '/students/stats',
+    one: (id) => `/students/${id}`,
+    status: (id) => `/students/${id}/status`,
+    photo: (id) => `/students/${id}/photo`,
+    rollNumbers: '/students/roll-numbers',
+    promote: '/students/promote',
+  },
+  reports: {
+    dashboard: '/reports/dashboard',
+  },
+};
