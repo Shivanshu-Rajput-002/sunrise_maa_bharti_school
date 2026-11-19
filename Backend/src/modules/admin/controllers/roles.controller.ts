@@ -1,8 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser, Permissions, SkipScope } from '../../../common/decorators';
-import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import type { AuthUser } from '../../../common/interfaces/request-context';
-import { CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from '../dto/role.dto';
+import { AuditQueryDto, CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from '../dto/role.dto';
 import { AuditService } from '../services/audit.service';
 import { RolesService } from '../services/roles.service';
 
@@ -56,7 +55,13 @@ export class RolesController {
 
   @Get('audit-logs')
   @Permissions('users.view')
-  auditLogs(@Query() query: PaginationQueryDto) {
+  auditLogs(@Query() query: AuditQueryDto) {
     return this.audit.list(query);
+  }
+
+  @Get('audit-logs/kinds')
+  @Permissions('users.view')
+  auditKinds() {
+    return this.audit.kinds();
   }
 }

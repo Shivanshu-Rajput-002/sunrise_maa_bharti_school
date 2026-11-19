@@ -31,10 +31,15 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ['Role'],
     }),
     deleteRole: b.mutation({ query: (id) => ({ url: r.role(id), method: 'DELETE' }), invalidatesTags: ['Role'] }),
+    // Activity is always fresh — no caching between visits
+    getAuditLogs: b.query({ query: (params) => ({ url: r.auditLogs, params }), keepUnusedDataFor: 0 }),
+    getAuditKinds: b.query({ query: () => ({ url: `${r.auditLogs}/kinds` }), keepUnusedDataFor: 30 }),
   }),
 });
 
 export const {
+  useGetAuditLogsQuery,
+  useGetAuditKindsQuery,
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,

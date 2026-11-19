@@ -28,13 +28,13 @@ export class ScopeInterceptor implements NestInterceptor {
 
     const sessionId = rawSession ? Number(rawSession) : req.user.sessionId;
     if (!(await this.scopes.isValidSession(sessionId))) {
-      throw new BadRequestException('Invalid or inactive academic session');
+      throw new BadRequestException('The selected session is not active. Please choose another session from the top bar.');
     }
 
     let mediumId: number | null = null;
     if (rawMedium && rawMedium !== 'all') {
       mediumId = Number(rawMedium);
-      if (!(await this.scopes.isValidMedium(mediumId))) throw new BadRequestException('Invalid medium');
+      if (!(await this.scopes.isValidMedium(mediumId))) throw new BadRequestException('The selected medium is not valid. Please choose Hindi, English or All from the top bar.');
     }
 
     req.scope = { sessionId, mediumId };

@@ -8,12 +8,13 @@ import { StudentEnrollment } from '../students/entities/student-enrollment.entit
 import { Exam, ExamMark, ExamSchedule } from './entities/exam.entities';
 import { ReportCardExtra } from './entities/report-card-extra.entity';
 import { ExamPrintService } from './services/exam-print.service';
+import { MarksExcelService } from './services/marks-excel.service';
 import { ExamsService } from './services/exams.service';
 
 @Module({
   imports: [SequelizeModule.forFeature([Exam, ExamSchedule, ExamMark, ReportCardExtra, Attendance, StudentEnrollment, AcademicSession]), StudentsModule],
   controllers: [ExamsController],
-  providers: [ExamsService, ExamPrintService],
+  providers: [ExamsService, ExamPrintService, MarksExcelService],
   exports: [ExamsService, ExamPrintService],
 })
 export class ExamsModule {}

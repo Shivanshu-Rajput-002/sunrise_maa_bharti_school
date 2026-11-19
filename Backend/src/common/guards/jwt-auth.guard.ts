@@ -18,7 +18,7 @@ export class JwtAuthGuard implements CanActivate {
 
     const req = ctx.switchToHttp().getRequest<AppRequest>();
     const [type, token] = (req.headers.authorization || '').split(' ');
-    if (type !== 'Bearer' || !token) throw new UnauthorizedException('Login required');
+    if (type !== 'Bearer' || !token) throw new UnauthorizedException('Please sign in to continue.');
 
     try {
       const payload = await this.jwt.verifyAsync<{ sub: number; rid: number; role: string; sid: number }>(token);
@@ -26,7 +26,7 @@ export class JwtAuthGuard implements CanActivate {
       req.user = user;
       return true;
     } catch {
-      throw new UnauthorizedException('Session expired, please login again');
+      throw new UnauthorizedException('Your login has expired. Please sign in again.');
     }
   }
 }

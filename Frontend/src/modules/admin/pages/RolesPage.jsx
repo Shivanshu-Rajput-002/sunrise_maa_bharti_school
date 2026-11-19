@@ -87,7 +87,9 @@ function NewRoleModal({ onClose, onCreated }) {
 const pretty = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function RolesPage() {
-  const { data: roles = [], isLoading } = useGetRolesQuery();
+  const { data: allRoles = [], isLoading } = useGetRolesQuery();
+  // Super admin always has everything — nothing to manage, so it is not listed
+  const roles = allRoles.filter((r) => r.slug !== 'super_admin');
   const { data: catalogue = {} } = useGetPermissionCatalogueQuery();
   const [save, s] = useSetRolePermissionsMutation();
   const [del, d] = useDeleteRoleMutation();
@@ -100,7 +102,8 @@ export default function RolesPage() {
   const canDelete = usePermission('roles.delete');
 
   const selected = roles.find((r) => r.id === selectedId) ?? roles[0];
-  const locked = !canUpdate || selected?.slug === 'super_admin';
+  // Super admin = everything automatically; parent = portal only (fixed for safety)
+  const locked = !canUpdate || selected?.slug === 'super_admin' || selected?.slug === 'parent';
 
   useEffect(() => {
     if (selected) setDraft(new Set(selected.permissions));
@@ -191,8 +194,10 @@ export default function RolesPage() {
             title={selected.name}
             subtitle={
               selected.slug === 'super_admin'
-                ? 'Super admin always has every permission.'
-                : `${draft.size} permissions · ${selected.userCount} users`
+                ? 'Super admin always has every permission automatically — nothing to tick.'
+                : selected.slug === 'parent'
+                  ? 'Locked: parents can only open the parent portal (their own children only).'
+                  : `${draft.size} permissions · ${selected.userCount} users`
             }
             actions={
               <>
@@ -247,7 +252,13 @@ export default function RolesPage() {
                 );
               })}
             </div>
-            {selected.isSystem && selected.slug !== 'super_admin' && (
+            {selected.slug === 'parent' && (
+              <p className="mt-4 flex items-start gap-2 rounded-xl p-3 text-xs text-muted shadow-neu-in-sm">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>The parent role is fixed to <b>portal.view</b>. In the portal a parent sees only their own children: fee installments and receipts, dues, test report cards, admit cards released by the school, attendance, notices, class tests and bus GPS.</span>
+              </p>
+            )}
+            {selected.isSystem && selected.slug !== 'super_admin' && selected.slug !== 'parent' && (
               <p className="mt-4 text-xs text-muted">
                 <Badge>System role</Badge> <span className="ml-1">Can be edited but not deleted.</span>
               </p>

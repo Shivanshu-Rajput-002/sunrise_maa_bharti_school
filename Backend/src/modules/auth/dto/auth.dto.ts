@@ -12,10 +12,11 @@ export class LoginDto {
   @MaxLength(72)
   password: string;
 
-  /** Academic session chosen on the login screen */
+  /** Optional — the current session is used when omitted (session is switched from the dashboard) */
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
-  sessionId: number;
+  sessionId?: number;
 }
 
 export class RefreshDto {

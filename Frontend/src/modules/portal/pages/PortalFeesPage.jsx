@@ -68,7 +68,7 @@ function Fees({ child }) {
         ))}
       </div>
 
-      <Card title="Payment receipts" className="mt-6">
+      <Card title="Payment receipts" subtitle="A receipt appears here once the school has collected the fee" className="mt-6">
         {data.receipts.length ? (
           <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {data.receipts.map((r) => (
@@ -79,7 +79,7 @@ function Fees({ child }) {
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
                   <span className="font-semibold tabular-nums">{formatMoney(Number(r.netAmount))}</span>
-                  <Button size="icon-sm" icon={Printer} aria-label="Download receipt" onClick={() => openPdf(`/portal/children/${child.id}/receipts/${r.id}/pdf`)} />
+                  <Button size="icon-sm" icon={Printer} aria-label="Download receipt" onClick={() => openPdf(`/portal/children/${child.id}/receipts/${r.id}/pdf`, undefined, `Fee receipt ${r.receiptNo}`)} />
                 </span>
               </li>
             ))}

@@ -136,7 +136,8 @@ export default function StudentFormPage() {
     try {
       const res = isEdit ? await update({ id: Number(id), ...payload }).unwrap() : await admit(payload).unwrap();
       toast.success(isEdit ? 'Student updated' : `Admission done · ${res.admissionNo}`);
-      navigate(`/students/${res.id}`, { replace: true });
+      // New admission: the parent portal login was created / linked — show it once on the profile
+      navigate(`/students/${res.id}`, { replace: true, state: !isEdit && res.parentLogin ? { parentLogin: res.parentLogin } : undefined });
     } catch (e) {
       toast.error(e.message);
     }

@@ -87,7 +87,7 @@ function UserForm({ initial, roles, onClose }) {
     <Modal
       open
       onClose={onClose}
-      title={initial ? `Edit ${initial.name}` : 'New user'}
+      title={initial ? `Edit ${initial.name}` : 'New staff'}
       size="lg"
       footer={
         <>
@@ -195,12 +195,12 @@ export default function UsersPage() {
   return (
     <>
       <PageHeader
-        title="Users"
-        subtitle="Staff, teachers and parent accounts."
+        title="Staff logins"
+        subtitle="Login accounts for staff and parents. Staff records and attendance are under Staff → Staff Directory."
         actions={
           canCreate && (
             <Button variant="primary" icon={Plus} onClick={() => setEditing('new')}>
-              New user
+              New staff
             </Button>
           )
         }

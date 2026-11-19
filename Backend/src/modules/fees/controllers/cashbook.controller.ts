@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, Permissions, Scope } from '../../../common/decorators';
 import type { AuthUser, RequestScope } from '../../../common/interfaces/request-context';
-import { CashbookQueryDto, CreateCashbookEntryDto, CreateCashbookHeadDto, UpdateCashbookEntryDto, UpdateCashbookHeadDto } from '../dto/fee.dto';
+import { CashbookQueryDto, CreateCashbookEntryDto, CreateCashbookHeadDto, UpdateCashbookEntryDto, UpdateCashbookHeadDto, CancelPaymentDto } from '../dto/fee.dto';
 import { CashbookService } from '../services/cashbook.service';
 
 @Controller('cashbook')
@@ -50,9 +50,10 @@ export class CashbookController {
     return this.cashbook.update(id, dto, s, u);
   }
 
-  @Delete('entries/:id')
+  /** Entries are never deleted — cancelling keeps the record (needs cashbook.delete) */
+  @Post('entries/:id/cancel')
   @Permissions('cashbook.delete')
-  remove(@Param('id', ParseIntPipe) id: number, @Scope() s: RequestScope, @CurrentUser() u: AuthUser) {
-    return this.cashbook.remove(id, s, u);
+  cancel(@Param('id', ParseIntPipe) id: number, @Body() dto: CancelPaymentDto, @Scope() s: RequestScope, @CurrentUser() u: AuthUser) {
+    return this.cashbook.cancel(id, dto.reason, s, u);
   }
 }

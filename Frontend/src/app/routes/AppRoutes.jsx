@@ -17,6 +17,7 @@ const ClassesPage = lazy(() => import('../../modules/academic/pages/ClassesPage'
 const SubjectsPage = lazy(() => import('../../modules/academic/pages/SubjectsPage'));
 const UsersPage = lazy(() => import('../../modules/admin/pages/UsersPage'));
 const RolesPage = lazy(() => import('../../modules/admin/pages/RolesPage'));
+const ActivityPage = lazy(() => import('../../modules/admin/pages/ActivityPage'));
 const SettingsPage = lazy(() => import('../../modules/admin/pages/SettingsPage'));
 const StudentsListPage = lazy(() => import('../../modules/students/pages/StudentsListPage'));
 const StudentFormPage = lazy(() => import('../../modules/students/pages/StudentFormPage'));
@@ -25,6 +26,11 @@ const StudentImportPage = lazy(() => import('../../modules/students/pages/Studen
 const RollNumbersPage = lazy(() => import('../../modules/students/pages/RollNumbersPage'));
 const PromotionPage = lazy(() => import('../../modules/students/pages/PromotionPage'));
 const CertificatesPage = lazy(() => import('../../modules/students/pages/CertificatesPage'));
+const RecycleBinPage = lazy(() => import('../../modules/students/pages/RecycleBinPage'));
+const ParentsPage = lazy(() => import('../../modules/students/pages/ParentsPage'));
+const AdmitCardsPage = lazy(() => import('../../modules/exams/pages/AdmitCardsPage'));
+const StaffPage = lazy(() => import('../../modules/staff/pages/StaffPage'));
+const StaffAttendancePage = lazy(() => import('../../modules/staff/pages/StaffAttendancePage'));
 const CollectFeePage = lazy(() => import('../../modules/fees/pages/CollectFeePage'));
 const PaymentsPage = lazy(() => import('../../modules/fees/pages/PaymentsPage'));
 const DuesPage = lazy(() => import('../../modules/fees/pages/DuesPage'));
@@ -39,7 +45,6 @@ const ResultsPage = lazy(() => import('../../modules/exams/pages/ResultsPage'));
 const NoticesPage = lazy(() => import('../../modules/communication/pages/NoticesPage'));
 const TransportPage = lazy(() => import('../../modules/transport/pages/TransportPage'));
 const ReportsPage = lazy(() => import('../../modules/reports/pages/ReportsPage'));
-const PortalHomePage = lazy(() => import('../../modules/portal/pages/PortalHomePage'));
 const PortalFeesPage = lazy(() => import('../../modules/portal/pages/PortalFeesPage'));
 const PortalDuesPage = lazy(() => import('../../modules/portal/pages/PortalDuesPage'));
 const PortalBusPage = lazy(() => import('../../modules/portal/pages/PortalBusPage'));
@@ -75,7 +80,7 @@ export default function AppRoutes() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/portal" element={guard('portal.view', <ParentLayout />)}>
-            <Route index element={<PortalHomePage />} />
+            <Route index element={<Navigate to="/portal/fees" replace />} />
             <Route path="fees" element={<PortalFeesPage />} />
             <Route path="dues" element={<PortalDuesPage />} />
             <Route path="bus" element={<PortalBusPage />} />
@@ -95,6 +100,8 @@ export default function AppRoutes() {
             <Route path="/students/roll-numbers" element={guard('students.update', <RollNumbersPage />)} />
             <Route path="/students/promotion" element={guard('students.promote', <PromotionPage />)} />
             <Route path="/students/certificates" element={guard('students.certificates', <CertificatesPage />)} />
+            <Route path="/students/parents" element={guard('students.view', <ParentsPage />)} />
+            <Route path="/students/recycle-bin" element={guard('students.delete', <RecycleBinPage />)} />
             <Route path="/students/:id" element={guard('students.view', <StudentProfilePage />)} />
             <Route path="/students/:id/edit" element={guard('students.update', <StudentFormPage key="edit" />)} />
 
@@ -108,7 +115,11 @@ export default function AppRoutes() {
             <Route path="/attendance/register" element={guard('attendance.view', <AttendanceRegisterPage />)} />
             <Route path="/attendance/settings" element={guard('attendance.view', <AttendanceSettingsPage />)} />
 
+            <Route path="/staff" element={guard('staff.view', <StaffPage />)} />
+            <Route path="/staff/attendance" element={guard('staff.view', <StaffAttendancePage />)} />
+
             <Route path="/exams" element={guard('exams.view', <ExamsPage />)} />
+            <Route path="/exams/admit-cards" element={guard('exams.view', <AdmitCardsPage />)} />
             <Route path="/exams/marks" element={guard('exams.view', <MarksEntryPage />)} />
             <Route path="/exams/results" element={guard('exams.view', <ResultsPage />)} />
 
@@ -122,6 +133,7 @@ export default function AppRoutes() {
 
             <Route path="/admin/users" element={guard('users.view', <UsersPage />)} />
             <Route path="/admin/roles" element={guard('roles.view', <RolesPage />)} />
+            <Route path="/admin/activity" element={guard('users.view', <ActivityPage />)} />
             <Route path="/admin/settings" element={guard('settings.view', <SettingsPage />)} />
 
             <Route path="*" element={<NotFound />} />

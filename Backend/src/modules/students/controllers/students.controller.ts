@@ -21,7 +21,8 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { CurrentUser, Permissions, Scope } from '../../../common/decorators';
 import type { AuthUser, RequestScope } from '../../../common/interfaces/request-context';
-import { CertificateRegisterQueryDto, IdCardQueryDto, IssueCertificateDto, LinkParentDto } from '../dto/documents.dto';
+import { UpdateParentLoginDto, BulkParentLoginsDto, CertificateRegisterQueryDto, IdCardQueryDto, IssueCertificateDto, LinkParentDto, ParentActiveDto, ParentListQueryDto } from '../dto/documents.dto';
+import { ParentsService } from '../services/parents.service';
 import { AssignRollsDto, CreateStudentDto, PromoteDto, StudentQueryDto, UpdateStatusDto, UpdateStudentDto } from '../dto/student.dto';
 import { StudentDocumentsService } from '../services/student-documents.service';
 import { StudentImportService } from '../services/student-import.service';
@@ -44,6 +45,7 @@ export class StudentsController {
     private readonly students: StudentsService,
     private readonly documents: StudentDocumentsService,
     private readonly importer: StudentImportService,
+    private readonly parentsService: ParentsService,
   ) {}
 
   @Get()
@@ -99,6 +101,37 @@ export class StudentsController {
     sendPdf(res, await this.documents.certificatePdf(certId), `certificate-${certId}.pdf`);
   }
 
+  // ---------- parents page ----------
+  @Get('parents')
+  @Permissions('students.view')
+  parents(@Query() q: ParentListQueryDto, @Scope() scope: RequestScope) {
+    return this.parentsService.list(q, scope);
+  }
+
+  @Post('parents/bulk-logins')
+  @Permissions('students.update')
+  bulkParentLogins(@Body() dto: BulkParentLoginsDto, @CurrentUser() u: AuthUser) {
+    return this.parentsService.bulkCreate(dto, u);
+  }
+
+  @Patch('parents/:userId')
+  @Permissions('students.update')
+  updateParentLogin(@Param('userId', ParseIntPipe) userId: number, @Body() dto: UpdateParentLoginDto, @CurrentUser() u: AuthUser) {
+    return this.parentsService.updateLogin(userId, dto, u);
+  }
+
+  @Post('parents/:userId/reset-password')
+  @Permissions('students.update')
+  resetParentPassword(@Param('userId', ParseIntPipe) userId: number, @CurrentUser() u: AuthUser) {
+    return this.parentsService.resetPassword(userId, u);
+  }
+
+  @Patch('parents/:userId/active')
+  @Permissions('students.update')
+  parentActive(@Param('userId', ParseIntPipe) userId: number, @Body() dto: ParentActiveDto, @CurrentUser() u: AuthUser) {
+    return this.parentsService.setActive(userId, dto.isActive, u);
+  }
+
   @Get('parent-accounts')
   @Permissions('students.update')
   parentAccounts(@Query('search') search?: string) {
@@ -127,6 +160,18 @@ export class StudentsController {
   @Permissions('students.update')
   status(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto, @Scope() scope: RequestScope, @CurrentUser() u: AuthUser) {
     return this.students.updateStatus(id, dto, scope, u);
+  }
+
+  @Get('recycle-bin/list')
+  @Permissions('students.delete')
+  recycleBin(@CurrentUser() u: AuthUser) {
+    return this.students.recycleBin(u);
+  }
+
+  @Post(':id/restore')
+  @Permissions('students.delete')
+  restore(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
+    return this.students.restore(id, u);
   }
 
   @Delete(':id')

@@ -78,7 +78,8 @@ export class CashbookService {
 
     const page = q.page ?? 1;
     const limit = q.limit ?? 25;
-    const baseWhere: WhereOptions = { sessionId: scope.sessionId, ...(range ? { entryDate: range } : {}) };
+    // Cancelled entries stay in the list (struck through) but never count in totals
+    const baseWhere: WhereOptions = { sessionId: scope.sessionId, status: 'active', ...(range ? { entryDate: range } : {}) };
     const feeWhere: WhereOptions = { sessionId: scope.sessionId, status: 'paid', ...(range ? { paymentDate: range } : {}) };
 
     const [{ rows, count }, income, expense, fees] = await Promise.all([
@@ -122,6 +123,7 @@ export class CashbookService {
   async update(id: number, dto: UpdateCashbookEntryDto, scope: RequestScope, actor: AuthUser) {
     const e = await this.entries.findOne({ where: { id, sessionId: scope.sessionId } });
     if (!e) throw new NotFoundException('Entry not found in this session');
+    if (e.status === 'cancelled') throw new BadRequestException('This entry is cancelled and cannot be changed.');
     const patch: Record<string, unknown> = { ...dto };
     if (dto.headId) {
       const head = await this.heads.findByPk(dto.headId);
@@ -134,11 +136,13 @@ export class CashbookService {
     return e;
   }
 
-  async remove(id: number, scope: RequestScope, actor: AuthUser) {
+  /** Cancel (not delete): the entry stays on record with who / when / why */
+  async cancel(id: number, reason: string, scope: RequestScope, actor: AuthUser) {
     const e = await this.entries.findOne({ where: { id, sessionId: scope.sessionId } });
     if (!e) throw new NotFoundException('Entry not found in this session');
-    await e.destroy();
-    this.audit.log({ userId: actor.id, sessionId: scope.sessionId, action: 'delete', entity: 'cashbook_entry', entityId: id, meta: { amount: e.amount } });
-    return { id };
+    if (e.status === 'cancelled') throw new BadRequestException('This entry is already cancelled.');
+    await e.update({ status: 'cancelled', cancelReason: reason.trim(), cancelledBy: actor.id, cancelledAt: new Date() });
+    this.audit.log({ userId: actor.id, sessionId: scope.sessionId, action: 'cancel', entity: 'cashbook_entry', entityId: id, meta: { amount: e.amount, reason: reason.trim() } });
+    return e;
   }
 }

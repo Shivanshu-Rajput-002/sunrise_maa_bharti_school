@@ -14,6 +14,7 @@ import { SettingsService } from '../../admin/services/settings.service';
 import { AttendanceService } from '../../attendance/services/attendance.service';
 import { FeePayment } from '../../fees/entities/fee.entities';
 import { FeeCollectionService } from '../../fees/services/fee-collection.service';
+import { FeeLedgerService } from '../../fees/services/fee-ledger.service';
 import { StudentEnrollment } from '../../students/entities/student-enrollment.entity';
 import { Student } from '../../students/entities/student.entity';
 import { ReportQueryDto, ReportType } from '../dto/report.dto';
@@ -34,6 +35,7 @@ export class ReportsService {
     @InjectModel(AcademicSession) private readonly sessions: typeof AcademicSession,
     private readonly attendance: AttendanceService,
     private readonly fees: FeeCollectionService,
+    private readonly ledger: FeeLedgerService,
     private readonly settings: SettingsService,
     private readonly sequelize: Sequelize,
   ) {}
@@ -54,6 +56,8 @@ export class ReportsService {
         return this.xlsx(`daywise-collection-${tag}`, await this.daywise(q, scope, session?.name));
       case 'dues':
         return this.xlsx(`fee-dues-${tag}`, await this.dues(q, scope, session?.name));
+      case 'installments':
+        return this.xlsx(`installment-collection-${tag}`, await this.installmentWise(q, scope, session?.name));
       case 'ptm':
         return q.format === 'pdf'
           ? { buffer: await this.ptmPdf(q, scope, session?.name), filename: `ptm-sheet.pdf`, contentType: 'application/pdf' }
@@ -302,6 +306,65 @@ export class ReportsService {
   private async ptmRows(q: ReportQueryDto, scope: RequestScope) {
     if (!q.classId) throw new BadRequestException('Choose a class');
     return this.loadEnrollments(q, scope);
+  }
+
+  /**
+   * Installment-wise collection: one row per student with payable / paid / due for every
+   * installment, plus a grand-total row. Title lines summarise each installment.
+   */
+  private async installmentWise(q: ReportQueryDto, scope: RequestScope, session?: string) {
+    const rows = await this.ledger.bulk({ sessionId: scope.sessionId, mediumId: scope.mediumId, classId: q.classId, sectionId: q.sectionId });
+    const insts = rows[0]?.installments ?? [];
+    if (!insts.length) throw new BadRequestException('No fee installments are set up for this session (Fees → Fee Setup).');
+
+    const columns: { header: string; key: string; width?: number; numFmt?: string }[] = [
+      { header: 'Admission No', key: 'adm', width: 14 },
+      { header: 'Student', key: 'name', width: 24 },
+      { header: 'Class', key: 'cls', width: 10 },
+      { header: "Father's name", key: 'father', width: 20 },
+      { header: 'Mobile', key: 'mobile', width: 12 },
+    ];
+    insts.forEach((i, n) => {
+      columns.push({ header: `${i.name} · Payable`, key: `p${n}`, width: 14, numFmt: MONEY_FMT });
+      columns.push({ header: `${i.name} · Paid`, key: `c${n}`, width: 13, numFmt: MONEY_FMT });
+      columns.push({ header: `${i.name} · Due`, key: `d${n}`, width: 12, numFmt: MONEY_FMT });
+    });
+    columns.push({ header: 'Total payable', key: 'tp', width: 14, numFmt: MONEY_FMT }, { header: 'Total paid', key: 'tc', width: 13, numFmt: MONEY_FMT }, { header: 'Total due', key: 'td', width: 12, numFmt: MONEY_FMT });
+
+    const sum = { p: insts.map(() => 0), c: insts.map(() => 0), d: insts.map(() => 0) };
+    const data = rows.map((r) => {
+      const row: Record<string, unknown> = {
+        adm: r.student?.admissionNo,
+        name: r.student?.name,
+        cls: `${r.schoolClass?.name ?? ''}${r.section ? '-' + r.section.name : ''}`,
+        father: r.student?.fatherName,
+        mobile: r.student?.fatherMobile,
+        tp: r.totals.payable,
+        tc: r.totals.paid,
+        td: r.totals.due,
+      };
+      r.installments.forEach((i, n) => {
+        row[`p${n}`] = i.payable;
+        row[`c${n}`] = i.paid;
+        row[`d${n}`] = i.due;
+        sum.p[n] += i.payable;
+        sum.c[n] += i.paid;
+        sum.d[n] += i.due;
+      });
+      return row;
+    });
+    const totalRow: Record<string, unknown> = { name: 'TOTAL', tp: toMoney(sum.p.reduce((a, b) => a + b, 0)), tc: toMoney(sum.c.reduce((a, b) => a + b, 0)), td: toMoney(sum.d.reduce((a, b) => a + b, 0)) };
+    insts.forEach((_, n) => {
+      totalRow[`p${n}`] = toMoney(sum.p[n]);
+      totalRow[`c${n}`] = toMoney(sum.c[n]);
+      totalRow[`d${n}`] = toMoney(sum.d[n]);
+    });
+    const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 1000) / 10}%` : '-');
+    return buildSheet('Installment-wise', columns, [...data, {}, totalRow], [
+      `Installment-wise fee collection — Session ${session ?? ''}`,
+      `Students: ${rows.length}`,
+      ...insts.map((i, n) => `${i.name} (due ${fmtDate(i.dueDate)}): payable ${toMoney(sum.p[n])} · collected ${toMoney(sum.c[n])} (${pct(sum.c[n], sum.p[n])}) · due ${toMoney(sum.d[n])}`),
+    ]);
   }
 
   private async ptm(q: ReportQueryDto, scope: RequestScope, session?: string) {

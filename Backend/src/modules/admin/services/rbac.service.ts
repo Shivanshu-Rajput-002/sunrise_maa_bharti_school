@@ -1,3 +1,4 @@
+import { PARENT_ROLE } from '../../../common/constants';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Permission } from '../entities/permission.entity';
@@ -20,7 +21,8 @@ export class RbacService {
     const role = await this.roles.findByPk(roleId, {
       include: [{ model: Permission, attributes: ['key'], through: { attributes: [] } }],
     });
-    const keys = new Set((role?.permissions ?? []).map((p) => p.key));
+    // Parents are locked to the portal: whatever is stored, they only ever get portal.view
+    const keys = role?.slug === PARENT_ROLE ? new Set(['portal.view']) : new Set((role?.permissions ?? []).map((p) => p.key));
     this.cache.set(roleId, keys);
     return keys;
   }

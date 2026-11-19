@@ -17,6 +17,7 @@ import { setMobileNav, toggleTheme } from '../../store/slices/uiSlice';
 import { storage } from '../../utils/storage';
 import Avatar from '../common/Avatar';
 import Card from '../common/Card';
+import ErrorBoundary from '../common/ErrorBoundary';
 import Loader from '../common/Loader';
 
 /**
@@ -66,7 +67,7 @@ export default function ParentLayout() {
       <div className="flex items-center gap-3 px-4 pb-3 pt-5">
         <SchoolLogo className="h-12 w-12" />
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-base font-semibold">{APP_SHORT}</p>
+          <p className="truncate text-[1rem] font-semibold">{APP_SHORT}</p>
           <p className="text-[11px] text-muted">Parent portal</p>
         </div>
       </div>
@@ -197,6 +198,7 @@ export default function ParentLayout() {
 
         <main className="flex-1 px-3 py-5 sm:px-6 sm:py-6 2xl:px-10">
           <div className="mx-auto w-full max-w-7xl">
+            <ErrorBoundary inline resetKey={location.pathname}>
             <Suspense fallback={<Loader />}>
               {isLoading ? (
                 <Loader />
@@ -208,6 +210,7 @@ export default function ParentLayout() {
                 <Outlet context={{ child, children }} />
               )}
             </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

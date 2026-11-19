@@ -49,14 +49,15 @@ export class PortalController {
     return this.portal.results(id, u, s);
   }
 
-  @Get('children/:id/report-card/pdf')
-  async reportCard(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser, @Scope() s: RequestScope, @Res() res: Response) {
-    sendPdf(res, await this.portal.reportCardPdf(id, u, s), `report-card.pdf`);
-  }
-
   @Get('children/:id/exams')
   exams(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser, @Scope() s: RequestScope) {
     return this.portal.examSchedule(id, u, s);
+  }
+
+  @Get('children/:id/test-marksheet/:examId/pdf')
+  @Permissions('portal.view')
+  async testMarksheet(@Param('id', ParseIntPipe) id: number, @Param('examId', ParseIntPipe) examId: number, @CurrentUser() u: AuthUser, @Scope() s: RequestScope, @Res() res: Response) {
+    sendPdf(res, await this.portal.testMarksheetPdf(id, examId, u, s), `marksheet.pdf`);
   }
 
   @Get('children/:id/admit-card/:examId/pdf')

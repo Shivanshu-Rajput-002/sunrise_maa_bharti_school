@@ -75,12 +75,14 @@ export interface ReceiptView {
   dueAmount: number;
   nextDueDate: string | null;
   cancelled: boolean;
+  /** Parent portal: one copy, no "Copy for …" label (school prints both copies) */
+  single?: boolean;
 }
 
 export function receiptHtml(r: ReceiptView) {
   const copy = (label: string) => `
   <div class="copy">
-    <div class="label">${label}</div>
+    ${label ? `<div class="label">${label}</div>` : ''}
     <div class="box">
       <div class="head">
         ${r.logo ? `<img src="${r.logo}">` : ''}
@@ -115,10 +117,10 @@ export function receiptHtml(r: ReceiptView) {
     </div>
   </div>`;
   return page(
-    `@page{size:A4 landscape;margin:10mm}
+    `@page{size:A4 ${r.single ? 'portrait' : 'landscape'};margin:10mm}
     body{font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#222}
     .wrap{display:flex;gap:14mm;justify-content:center}
-    .copy{width:128mm}
+    .copy{width:${r.single ? '165mm' : '128mm'}}
     .label{font-size:12px;margin-bottom:2px}
     .box{border:1px solid #000;position:relative}
     .head{display:flex;gap:6px;align-items:flex-start;padding:4px 6px;border-bottom:1px solid #000}
@@ -135,7 +137,7 @@ export function receiptHtml(r: ReceiptView) {
     .foot p{margin:6px 0}
     .sign{text-align:right;font-weight:bold;margin-top:22px!important}
     .void{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:bold;color:rgba(220,38,38,.22);transform:rotate(-20deg)}`,
-    `<div class="wrap">${copy('Copy for School')}${copy('Copy for Student')}</div>`,
+    r.single ? `<div class="wrap">${copy('')}</div>` : `<div class="wrap">${copy('Copy for School')}${copy('Copy for Student')}</div>`,
   );
 }
 
@@ -624,5 +626,83 @@ export function dueSlipsHtml(v: DueSlipView) {
     .body p:last-child{padding-left:10px}
     .sign{margin-top:auto;text-align:right;font-size:13px;padding-bottom:4px}`,
     pages.join('') || '<p style="font-family:sans-serif;padding:20px">No students with pending fees.</p>',
+  );
+}
+
+// =====================================================================
+// SINGLE TEST MARKSHEET — one exam (class test / unit test / half yearly …)
+// =====================================================================
+export interface TestMarksheetView {
+  logo: string;
+  photo: string;
+  print: PrintSettings;
+  campus: string;
+  session: string;
+  examName: string;
+  student: { name: string; father: string; mother: string; className: string; rollNo: string; srNo: string };
+  practical: boolean;
+  rows: { subject: string; max: number; th: number | null; pr: number | null; thMax: number; prMax: number | null; total: number | null; absent: boolean; pass: number; additional: boolean }[];
+  total: number;
+  max: number;
+  percent: number | null;
+  grade: string;
+  result: string;
+  rank: number | null;
+  classSize: number;
+}
+
+export function testMarksheetHtml(v: TestMarksheetView) {
+  const p = v.print;
+  const s = v.student;
+  const main = v.rows.filter((r) => !r.additional);
+  const extra = v.rows.filter((r) => r.additional);
+  const mark = (x: number | null, absent: boolean) => (absent ? 'AB' : x == null ? '' : num(x));
+  const line = (r: TestMarksheetView['rows'][number]) => {
+    const low = !r.absent && r.total != null && r.total < r.pass;
+    return `<tr><td class="l">${esc(r.subject)}</td>${v.practical ? `<td>${num(r.thMax)}</td><td>${r.prMax != null ? num(r.prMax) : '-'}</td>` : ''}<td>${num(r.max)}</td>${
+      v.practical ? `<td>${mark(r.th, r.absent)}</td><td>${r.prMax != null ? mark(r.pr, r.absent) : '-'}</td>` : ''
+    }<td class="${low || r.absent ? 'red' : ''}">${mark(r.total, r.absent)}</td></tr>`;
+  };
+  const cols = v.practical ? 6 : 3;
+  return page(
+    `@page{size:A4;margin:10mm}
+    body{font-family:"Times New Roman",Times,serif;color:#00f}
+    .sheet{border:1px solid #000;padding:12px 14px}
+    table{width:100%;border-collapse:collapse}
+    .hdr td{border:0;vertical-align:top} .hdr .lg{width:90px} .hdr img{width:80px;height:98px;object-fit:contain} .hdr .tt{text-align:center}
+    .dep{color:green;font-size:12px;border-bottom:1px solid #ccc;padding:4px 0}
+    .sch{font-family:Arial,Helvetica,sans-serif;font-size:19px;margin-top:4px;white-space:nowrap}
+    .cmp{font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:4px}
+    .prg{color:red;font-size:13px;margin-top:4px}
+    .info td,.info th{border:1px solid #00f;padding:4px 6px;text-align:left;font-size:14px}
+    .info .ph{width:16%;text-align:center} .info .ph img{width:66px;height:76px;object-fit:cover}
+    .mk{margin-top:12px} .mk td,.mk th{border:1px solid #00f;padding:5px 6px;text-align:center;font-size:14px}
+    .mk .l{text-align:left} .mk .red{color:red} .mk .b td{font-weight:bold}
+    .res th{color:green;text-align:left;border:1px solid #00f;padding:6px;font-size:14px}
+    .sg td{border:1px solid #00f;height:56px;vertical-align:bottom;padding:4px 6px;font-size:13px;width:33%}`,
+    `<div class="sheet">
+      <table class="hdr"><tr>
+        <td class="lg">${v.logo ? `<img src="${v.logo}">` : ''}</td>
+        <td class="tt">
+          <div class="dep">${esc(p.department)}</div>
+          <div class="sch">${esc(p.schoolName)}</div>
+          <div class="cmp">( UDISE CODE - ${esc(p.udiseCode)} ) ${esc(v.campus)} ${esc(p.phone)}</div>
+          <div class="prg">${esc(v.examName.toUpperCase())} — PROGRESS REPORT ${esc(v.session)}</div>
+        </td></tr></table>
+      <table class="info">
+        <tr><td>Student</td><td colspan="3">${esc(s.name)}</td><td rowspan="3" class="ph">${v.photo ? `<img src="${v.photo}">` : ''}</td></tr>
+        <tr><td>Father / Mother</td><td colspan="3">${esc(s.father)}${s.mother ? ` / ${esc(s.mother)}` : ''}</td></tr>
+        <tr><th>Class : ${esc(s.className)}</th><th>Roll No. : ${esc(s.rollNo)}</th><th colspan="2">Sr No. : ${esc(s.srNo)}</th></tr>
+      </table>
+      <table class="mk">
+        <tr><th class="l">Subjects</th>${v.practical ? '<th>Max TH</th><th>Max PR</th>' : ''}<th>Max Marks</th>${v.practical ? '<th>TH</th><th>PR</th>' : ''}<th>Obtained</th></tr>
+        ${main.map(line).join('')}
+        <tr class="b"><td class="l">Total</td>${v.practical ? '<td></td><td></td>' : ''}<td>${num(v.max)}</td>${v.practical ? '<td></td><td></td>' : ''}<td>${num(v.total)}</td></tr>
+        <tr class="b"><td class="l">Percentage</td><td colspan="${cols - 1}" style="text-align:right">${v.percent != null ? pct(v.percent) : ''}</td></tr>
+        ${extra.length ? `<tr><td colspan="${cols}" style="height:14px;border-left:0;border-right:0"></td></tr>${extra.map(line).join('')}` : ''}
+      </table>
+      <table class="mk"><tr class="res"><th>Result : ${esc(v.result)}</th><th>Grade : ${esc(v.grade)}</th><th>Rank : ${v.rank ?? ''}${v.rank ? ` / ${v.classSize}` : ''}</th></tr></table>
+      <table class="mk"><tr class="sg"><td>Sign of Class teacher</td><td>Sign of Parent</td><td style="text-align:right">Principal</td></tr></table>
+    </div>`,
   );
 }

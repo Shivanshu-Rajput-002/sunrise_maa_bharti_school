@@ -181,6 +181,7 @@ export default function ExamsPage() {
           { key: 'type', header: 'Type', render: (e) => typeLabel[e.type] },
           { key: 'dates', header: 'Dates', render: (e) => (e.startDate ? `${formatDate(e.startDate)} – ${formatDate(e.endDate)}` : '—') },
           { key: 'report', header: 'Marksheet column', render: (e) => [e.reportColumn && `${colLabel[e.reportColumn]} (Hindi)`, e.reportColumnEn && `${colLabel[e.reportColumnEn]} (English)`].filter(Boolean).join(' · ') || '—' },
+          { key: 'admit', header: 'Admit card to parents', render: (e) => canManage ? <Switch checked={e.admitCardVisible} onChange={async (v) => { try { await update({ id: e.id, admitCardVisible: v }).unwrap(); toast.success(v ? 'Admit card released to parents' : 'Admit card hidden from parents'); } catch (err) { toast.error(err.message); } }} /> : <Badge tone={e.admitCardVisible ? 'success' : 'neutral'}>{e.admitCardVisible ? 'Released' : 'Hidden'}</Badge> },
           { key: 'pub', header: 'Results to parents', render: (e) => canManage ? <Switch checked={e.isPublished} onChange={async (v) => { try { await update({ id: e.id, isPublished: v }).unwrap(); toast.success(v ? 'Published to parents' : 'Unpublished'); } catch (err) { toast.error(err.message); } }} /> : <Badge tone={e.isPublished ? 'success' : 'neutral'}>{e.isPublished ? 'Published' : 'Hidden'}</Badge> },
           { key: 'a', header: '', className: 'text-right', render: (e) => (
             <div className="flex justify-end gap-2">

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiRoutes } from '../api/apiRoutes';
+import { friendlyError } from './errors';
 
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 
@@ -59,11 +60,15 @@ export function setupInterceptors(appStore, { onRefreshed, onAuthFailed }) {
         }
       }
 
-      const body = error.response?.data;
-      const message = Array.isArray(body?.message)
-        ? body.message.join(', ')
-        : body?.message || (error.code === 'ECONNABORTED' ? 'Request timed out' : 'Network error, please retry');
-      return Promise.reject({ status, message, data: body });
+      // Blob requests (PDF/Excel) get their JSON error body back as a Blob — read it first
+      if (error.response?.data instanceof Blob && /json/i.test(error.response.headers?.['content-type'] ?? '')) {
+        try {
+          error.response.data = JSON.parse(await error.response.data.text());
+        } catch {
+          /* keep as is */
+        }
+      }
+      return Promise.reject(friendlyError(error));
     },
   );
 }

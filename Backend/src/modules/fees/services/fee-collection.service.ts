@@ -272,7 +272,7 @@ export class FeeCollectionService {
   }
 
   /** Receipt PDF: school copy + student copy side by side, in the old receipt's layout */
-  async receiptPdf(id: number, scope: RequestScope) {
+  async receiptPdf(id: number, scope: RequestScope, opts: { single?: boolean } = {}) {
     const p = await this.findOne(id, scope);
     const [school, print, session, ledger] = await Promise.all([
       this.settings.get('school'),
@@ -316,8 +316,9 @@ export class FeeCollectionService {
         dueAmount: ledger.totals.due,
         nextDueDate: next ? dMonY(next.dueDate) : null,
         cancelled: p.status === 'cancelled',
+        single: opts.single,
       }),
-      { landscape: true, margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } },
+      { landscape: !opts.single, margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } },
     );
   }
 

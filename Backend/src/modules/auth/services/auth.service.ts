@@ -11,6 +11,7 @@ import { ScopeService } from '../../academic/services/scope.service';
 import { SessionsService } from '../../academic/services/sessions.service';
 import { Role } from '../../admin/entities/role.entity';
 import { User } from '../../admin/entities/user.entity';
+import { SettingsService } from '../../admin/services/settings.service';
 import { AuditService } from '../../admin/services/audit.service';
 import { RbacService } from '../../admin/services/rbac.service';
 import { ChangePasswordDto, LoginDto } from '../dto/auth.dto';
@@ -34,12 +35,13 @@ export class AuthService {
     private readonly scope: ScopeService,
     private readonly sessions: SessionsService,
     private readonly audit: AuditService,
+    private readonly settings: SettingsService,
   ) {}
 
-  /** Data for the login screen: active sessions + which one is pre-selected */
+  /** Public data for the login screen: school name + logo, active sessions, current session */
   async loginOptions() {
-    const [sessions, current] = await Promise.all([this.sessions.list(true), this.sessions.current()]);
-    return { sessions, currentSessionId: current?.id ?? null };
+    const [sessions, current, school] = await Promise.all([this.sessions.list(true), this.sessions.current(), this.settings.get('school')]);
+    return { sessions, currentSessionId: current?.id ?? null, school: { name: school.name, tagline: school.tagline, logoPath: school.logoPath } };
   }
 
   async login(dto: LoginDto, client: ClientInfo) {
@@ -52,12 +54,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid username or password');
     }
     if (!user.isActive) throw new UnauthorizedException('Account is disabled');
-    if (!(await this.scope.isValidSession(dto.sessionId))) throw new BadRequestException('Select a valid session');
+    // No session picked at login → start in the current session (switchable from the dashboard)
+    const sessionId = dto.sessionId ?? (await this.sessions.current())?.id;
+    if (!sessionId || !(await this.scope.isValidSession(sessionId))) throw new BadRequestException('No academic session is set up yet');
 
     await user.update({ lastLoginAt: new Date() });
-    this.audit.log({ userId: user.id, sessionId: dto.sessionId, action: 'login', entity: 'auth', ip: client.ip });
+    this.audit.log({ userId: user.id, sessionId, action: 'login', entity: 'auth', ip: client.ip });
 
-    return this.issueTokens(user, dto.sessionId, client);
+    return this.issueTokens(user, sessionId, client);
   }
 
   /** Rotates the refresh token. Re-use of a revoked token revokes the whole family (theft detection). */

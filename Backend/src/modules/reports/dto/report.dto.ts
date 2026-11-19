@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsDateString, IsIn, IsInt, IsOptional, Matches } from 'class-validator';
 
-export const REPORT_TYPES = ['students', 'parents', 'attendance', 'collection', 'daywise', 'dues', 'ptm'] as const;
+export const REPORT_TYPES = ['students', 'parents', 'attendance', 'collection', 'daywise', 'dues', 'installments', 'ptm'] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
 
 export class ReportQueryDto {

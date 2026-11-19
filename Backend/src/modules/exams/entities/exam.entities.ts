@@ -51,6 +51,10 @@ export class Exam extends Model {
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
   declare isPublished: boolean;
 
+  /** Parents can download the admit card only when this is on */
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare admitCardVisible: boolean;
+
   @HasMany(() => ExamSchedule)
   declare schedules?: ExamSchedule[];
 }

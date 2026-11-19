@@ -35,7 +35,7 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
         className={clsx('neu-card relative flex max-h-[90vh] w-full flex-col animate-fade-in', sizes[size])}
       >
         <header className="flex items-center justify-between gap-4 px-6 pt-5">
-          <h3 className="text-base font-semibold">{title}</h3>
+          <h3 className="text-[1rem] font-semibold">{title}</h3>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted shadow-neu-sm hover:text-ink active:shadow-neu-in-sm"

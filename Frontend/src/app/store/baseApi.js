@@ -23,7 +23,7 @@ export const baseApi = createApi({
   tagTypes: [
     'Dashboard', 'Session', 'Medium', 'Class', 'Subject', 'User', 'Role', 'Permission', 'Student', 'Settings',
     'Route', 'Bus', 'FeeHead', 'Installment', 'Structure', 'Ledger', 'Payment', 'Dues', 'CashHead', 'CashEntry',
-    'Attendance', 'Holiday', 'Device', 'Exam', 'Schedule', 'Marks', 'Result', 'Notice', 'Certificate', 'Portal', 'Extras',
+    'Attendance', 'Holiday', 'Device', 'Exam', 'Schedule', 'Marks', 'Result', 'Notice', 'Certificate', 'Portal', 'Extras', 'Staff', 'StaffAttendance', 'Parents',
   ],
   endpoints: () => ({}),
 });

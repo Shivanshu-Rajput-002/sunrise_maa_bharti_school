@@ -21,6 +21,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { ExamsModule } from './modules/exams/exams.module';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { PortalModule } from './modules/portal/portal.module';
+import { StaffModule } from './modules/staff/staff.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PortalModule } from './modules/portal/portal.module';
     TransportModule,
     FeesModule,
     AttendanceModule,
+    StaffModule,
     ExamsModule,
     CommunicationModule,
     ReportsModule,

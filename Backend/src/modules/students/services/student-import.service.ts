@@ -7,6 +7,7 @@ import { AuthUser, RequestScope } from '../../../common/interfaces/request-conte
 import { Medium } from '../../academic/entities/medium.entity';
 import { SchoolClass } from '../../academic/entities/school-class.entity';
 import { Section } from '../../academic/entities/section.entity';
+import { validationMessages } from '../../../common/errors/friendly-validation';
 import { CreateStudentDto } from '../dto/student.dto';
 import { StudentsService } from './students.service';
 
@@ -108,7 +109,7 @@ export class StudentImportService {
     const classBy = (v: string) => classes.find((c) => c.name.toLowerCase() === v.toLowerCase() || c.nameHi?.toLowerCase() === v.toLowerCase());
     const mediumBy = (v: string) => mediums.find((m) => m.code === v.toLowerCase() || m.name.toLowerCase() === v.toLowerCase());
 
-    const results: { row: number; status: 'ok' | 'error'; name?: string; admissionNo?: string; error?: string }[] = [];
+    const results: { row: number; status: 'ok' | 'error'; name?: string; admissionNo?: string; error?: string; className?: string; parentName?: string; username?: string; password?: string | null; loginNote?: string }[] = [];
     for (let r = 2; r <= ws.rowCount; r++) {
       const row = ws.getRow(r);
       const raw: Record<string, string> = {};
@@ -145,12 +146,23 @@ export class StudentImportService {
       const dto = plainToInstance(CreateStudentDto, plain);
       const errs = await validate(dto, { whitelist: true });
       if (errs.length) {
-        results.push({ row: r, status: 'error', name: raw.name, error: errs.flatMap((e) => Object.values(e.constraints ?? {})).join('; ') });
+        results.push({ row: r, status: 'error', name: raw.name, error: validationMessages(errs).join('; ') });
         continue;
       }
       try {
         const s = await this.students.admit(dto, scope, actor);
-        results.push({ row: r, status: 'ok', name: s.name, admissionNo: s.admissionNo });
+        const pl = s.parentLogin;
+        results.push({
+          row: r,
+          status: 'ok',
+          name: s.name,
+          admissionNo: s.admissionNo,
+          className: `${cls.name}${sec ? '-' + sec.name : ''}`,
+          parentName: s.fatherName || s.motherName || '',
+          username: pl?.username || undefined,
+          password: pl?.password ?? null,
+          loginNote: pl?.status === 'linked' ? 'Linked to family login' : pl?.status === 'skipped' ? pl.note : undefined,
+        });
       } catch (e) {
         results.push({ row: r, status: 'error', name: raw.name, error: (e as Error).message });
       }

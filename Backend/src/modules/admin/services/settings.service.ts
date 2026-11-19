@@ -76,6 +76,8 @@ const DEFAULTS = {
     campusHi: 'MOTI BAVJI KE PASS BIJOLIYA',
     campusEn: 'SABJI MANDI KE PASS BIJOLIYA',
   } as PrintSettings,
+  /** Staff attendance: arriving after this time (HH:MM) counts as late */
+  staff: { lateAfter: '08:00' },
   fees: { fullPaymentDiscountPercent: 10, lateFeePerInstallment: 0, receiptPrefix: 'R' } as FeeSettings,
   // Same bands as the old marksheet (GetGrade)
   grades: [

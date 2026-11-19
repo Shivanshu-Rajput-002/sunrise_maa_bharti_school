@@ -62,7 +62,7 @@ export class HtmlPdfService implements OnModuleDestroy {
       // Everything (images too) is inline, so block any network access from templates
       await page.setRequestInterception(true);
       page.on('request', (r) => (r.url().startsWith('data:') ? r.continue() : r.abort()));
-      await page.setContent(html, { waitUntil: 'load', timeout: 20000 });
+      await page.setContent(html, { waitUntil: 'load', timeout: 120_000 });
       const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '8mm', bottom: '8mm', left: '8mm', right: '8mm' }, ...options });
       return Buffer.from(pdf);
     } finally {

@@ -147,7 +147,7 @@ export class ClassesService {
       return await fn();
     } catch (e) {
       if (e instanceof UniqueConstraintError) throw new ConflictException('A record with this name already exists');
-      if (e instanceof ForeignKeyConstraintError) throw new BadRequestException('Record is in use or references an invalid record');
+      if (e instanceof ForeignKeyConstraintError) throw new BadRequestException('This record is linked to other data, so it cannot be changed or removed');
       throw e;
     }
   }

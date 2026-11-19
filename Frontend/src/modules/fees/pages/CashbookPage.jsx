@@ -1,10 +1,10 @@
-import { Pencil, Plus, Search, Settings2, Trash2 } from 'lucide-react';
+import { Ban, Pencil, Plus, Search, Settings2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   useCreateCashEntryMutation,
   useCreateCashHeadMutation,
-  useDeleteCashEntryMutation,
+  useCancelCashEntryMutation,
   useDeleteCashHeadMutation,
   useGetCashEntriesQuery,
   useGetCashHeadsQuery,
@@ -14,7 +14,6 @@ import {
 import Badge from '../../../components/common/Badge';
 import Button from '../../../components/common/Button';
 import Card from '../../../components/common/Card';
-import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import DataTable from '../../../components/common/DataTable';
 import Modal from '../../../components/common/Modal';
 import PageHeader from '../../../components/common/PageHeader';
@@ -112,7 +111,8 @@ export default function CashbookPage() {
   const debounced = useDebounce(search);
   const { data: heads = [] } = useGetCashHeadsQuery();
   const { data, isFetching } = useGetCashEntriesQuery({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== '')), search: debounced || undefined, limit: 25 });
-  const [del, d] = useDeleteCashEntryMutation();
+  const [cancelEntry, d] = useCancelCashEntryMutation();
+  const [reason, setReason] = useState('');
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [headsOpen, setHeadsOpen] = useState(false);
@@ -154,16 +154,16 @@ export default function CashbookPage() {
           meta={data?.meta}
           onPageChange={(page) => set({ page })}
           columns={[
-            { key: 'date', header: 'Date', render: (e) => formatDate(e.entryDate) },
+            { key: 'date', header: 'Date', render: (e) => <span className={e.status === 'cancelled' ? 'text-muted line-through' : ''}>{formatDate(e.entryDate)}</span> },
             { key: 'head', header: 'Head', render: (e) => e.head?.name },
             { key: 'party', header: 'Party' },
             { key: 'mode', header: 'Mode', render: (e) => e.mode.toUpperCase() },
-            { key: 'remarks', header: 'Remarks' },
-            { key: 'amount', header: 'Amount', className: 'text-right tabular-nums', render: (e) => <span className={e.type === 'income' ? 'text-success' : 'text-danger'}>{e.type === 'income' ? '+' : '−'} {formatMoney(Number(e.amount))}</span> },
+            { key: 'remarks', header: 'Remarks', render: (e) => (e.status === 'cancelled' ? <span><Badge tone="danger">Cancelled</Badge><span className="block text-xs text-muted">{e.cancelReason}</span></span> : e.remarks) },
+            { key: 'amount', header: 'Amount', className: 'text-right tabular-nums', render: (e) => <span className={e.status === 'cancelled' ? 'text-muted line-through' : e.type === 'income' ? 'text-success' : 'text-danger'}>{e.type === 'income' ? '+' : '−'} {formatMoney(Number(e.amount))}</span> },
             { key: 'a', header: '', className: 'text-right', render: (e) => (
               <div className="flex justify-end gap-2">
-                {canUpdate && <Button size="icon-sm" icon={Pencil} aria-label="Edit" onClick={() => setEditing(e)} />}
-                {canDelete && <Button size="icon-sm" variant="danger" icon={Trash2} aria-label="Delete" onClick={() => setDeleting(e)} />}
+                {canUpdate && e.status !== 'cancelled' && <Button size="icon-sm" icon={Pencil} aria-label="Edit" onClick={() => setEditing(e)} />}
+                {canDelete && e.status !== 'cancelled' && <Button size="icon-sm" variant="danger" icon={Ban} aria-label="Cancel entry" title="Cancel entry (kept on record)" onClick={() => { setReason(''); setDeleting(e); }} />}
               </div>
             ) },
           ]}
@@ -172,7 +172,16 @@ export default function CashbookPage() {
       </Card>
       {editing && <EntryForm initial={editing === 'new' ? null : editing} heads={heads} onClose={() => setEditing(null)} />}
       {headsOpen && <HeadsModal heads={heads} onClose={() => setHeadsOpen(false)} />}
-      <ConfirmDialog open={!!deleting} title="Delete entry?" message={`${deleting?.head?.name ?? ''} · ${formatMoney(Number(deleting?.amount ?? 0))}`} loading={d.isLoading} onConfirm={async () => { try { await del({ id: deleting.id }).unwrap(); toast.success('Deleted'); setDeleting(null); } catch (e) { toast.error(e.message); } }} onClose={() => setDeleting(null)} />
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Cancel cashbook entry?"
+        footer={<><Button onClick={() => setDeleting(null)}>Keep entry</Button><Button variant="danger" icon={Ban} loading={d.isLoading} disabled={reason.trim().length < 3} onClick={async () => { try { await cancelEntry({ id: deleting.id, reason: reason.trim() }).unwrap(); toast.success('Entry cancelled'); setDeleting(null); } catch (e) { toast.error(e.message); } }}>Cancel entry</Button></>}
+      >
+        <p className="text-sm">{deleting?.head?.name ?? ''} · {formatMoney(Number(deleting?.amount ?? 0))} · {deleting ? formatDate(deleting.entryDate) : ''}</p>
+        <p className="mt-2 text-xs text-muted">The entry is not deleted — it stays in the cashbook marked “Cancelled” and is left out of the totals.</p>
+        <Input className="mt-4" label="Reason" required maxLength={255} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Entered twice by mistake" />
+      </Modal>
     </>
   );
 }

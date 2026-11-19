@@ -12,6 +12,7 @@ const EXTRA_PERMISSION: Partial<Record<ReportType, string>> = {
   collection: 'fees.view',
   daywise: 'fees.view',
   dues: 'fees.view',
+  installments: 'fees.view',
   attendance: 'attendance.view',
 };
 

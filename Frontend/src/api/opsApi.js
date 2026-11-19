@@ -64,7 +64,7 @@ export const opsApi = baseApi.injectEndpoints({
     getCashEntries: b.query(q('/cashbook/entries', ['CashEntry'])),
     createCashEntry: b.mutation(m('POST', '/cashbook/entries', ['CashEntry'])),
     updateCashEntry: b.mutation(m('PATCH', (a) => `/cashbook/entries/${a.id}`, ['CashEntry'])),
-    deleteCashEntry: b.mutation(m('DELETE', (a) => `/cashbook/entries/${a.id}`, ['CashEntry'])),
+    cancelCashEntry: b.mutation(m('POST', (a) => `/cashbook/entries/${a.id}/cancel`, ['CashEntry'])),
 
     // ---------- attendance ----------
     getAttendanceSheet: b.query(q('/attendance/sheet', ['Attendance'])),
@@ -77,6 +77,16 @@ export const opsApi = baseApi.injectEndpoints({
     createDevice: b.mutation(m('POST', '/attendance/devices', ['Device'])),
     toggleDevice: b.mutation({ query: ({ id, active }) => ({ url: `/attendance/devices/${id}`, method: 'PATCH', params: { active } }), invalidatesTags: ['Device'] }),
     deleteDevice: b.mutation(m('DELETE', (a) => `/attendance/devices/${a.id}`, ['Device'])),
+
+    // ---------- staff ----------
+    getStaff: b.query(q('/staff', ['Staff'])),
+    createStaff: b.mutation(m('POST', '/staff', ['Staff', 'StaffAttendance', 'Dashboard'])),
+    updateStaff: b.mutation(m('PATCH', (a) => `/staff/${a.id}`, ['Staff', 'StaffAttendance', 'Dashboard'])),
+    getStaffDay: b.query(q('/staff/attendance', ['StaffAttendance'])),
+    markStaff: b.mutation(m('PUT', '/staff/attendance', ['StaffAttendance', 'Dashboard'])),
+    getStaffRegister: b.query(q('/staff/attendance/register', ['StaffAttendance'])),
+    getStaffSettings: b.query(q('/staff/settings', ['StaffAttendance'])),
+    saveStaffSettings: b.mutation(m('PUT', '/staff/settings', ['StaffAttendance', 'Dashboard'])),
 
     // ---------- exams ----------
     getExams: b.query(q('/exams', ['Exam'])),
@@ -102,10 +112,17 @@ export const opsApi = baseApi.injectEndpoints({
     getCertificates: b.query(q((id) => `/students/${id}/certificates`, ['Certificate'])),
     issueCertificate: b.mutation(m('POST', (a) => `/students/${a.id}/certificates`, ['Certificate', 'Student'])),
     getParentAccounts: b.query(q('/students/parent-accounts', ['User'])),
-    linkParent: b.mutation(m('PUT', (a) => `/students/${a.id}/parent`, ['Student', 'User'])),
-    unlinkParent: b.mutation(m('DELETE', (a) => `/students/${a.id}/parent`, ['Student'])),
+    linkParent: b.mutation(m('PUT', (a) => `/students/${a.id}/parent`, ['Student', 'User', 'Parents'])),
+    unlinkParent: b.mutation(m('DELETE', (a) => `/students/${a.id}/parent`, ['Student', 'Parents'])),
+    getParents: b.query(q('/students/parents', ['Parents'])),
+    bulkParentLogins: b.mutation(m('POST', '/students/parents/bulk-logins', ['Parents', 'Student', 'User'])),
+    updateParentLogin: b.mutation(m('PATCH', (a) => `/students/parents/${a.id}`, ['Parents', 'User', 'Student'])),
+    resetParentPassword: b.mutation(m('POST', (a) => `/students/parents/${a.id}/reset-password`, [])),
+    setParentActive: b.mutation(m('PATCH', (a) => `/students/parents/${a.id}/active`, ['Parents', 'User'])),
 
     // ---------- parent portal ----------
+    getRecycleBin: b.query({ query: () => ({ url: '/students/recycle-bin/list' }), providesTags: ['Student'], keepUnusedDataFor: 0 }),
+    restoreStudent: b.mutation(m('POST', (a) => `/students/${a.id}/restore`, ['Student', 'Dashboard', 'Parents'])),
     getChildren: b.query(q('/portal/children', ['Portal'])),
     getChildFees: b.query(q((id) => `/portal/children/${id}/fees`, ['Portal'])),
     getChildAttendance: b.query(q((id) => `/portal/children/${id}/attendance`, ['Portal'])),
@@ -125,13 +142,17 @@ export const {
   useGetStructureQuery, useSaveStructureMutation, useCopyStructureMutation, useSetConcessionMutation, useRemoveConcessionMutation,
   useGetLedgerQuery, useCollectFeeMutation, useGetPaymentsQuery, useCancelPaymentMutation, useGetDuesQuery,
   useGetCashHeadsQuery, useCreateCashHeadMutation, useUpdateCashHeadMutation, useDeleteCashHeadMutation,
-  useGetCashEntriesQuery, useCreateCashEntryMutation, useUpdateCashEntryMutation, useDeleteCashEntryMutation,
+  useGetCashEntriesQuery, useCreateCashEntryMutation, useUpdateCashEntryMutation, useCancelCashEntryMutation,
   useGetAttendanceSheetQuery, useMarkAttendanceMutation, useGetRegisterQuery, useGetHolidaysQuery, useCreateHolidayMutation,
   useDeleteHolidayMutation, useGetDevicesQuery, useCreateDeviceMutation, useToggleDeviceMutation, useDeleteDeviceMutation,
+  useGetStaffQuery, useCreateStaffMutation, useUpdateStaffMutation, useGetStaffDayQuery, useMarkStaffMutation,
+  useGetStaffRegisterQuery, useGetStaffSettingsQuery, useSaveStaffSettingsMutation,
   useGetExamsQuery, useCreateExamMutation, useUpdateExamMutation, useDeleteExamMutation, useGetScheduleQuery, useSaveScheduleMutation,
   useGetMarksQuery, useSaveMarksMutation, useGetResultQuery, useGetMarksheetExtrasQuery, useSaveMarksheetExtrasMutation, useSavePrintSettingsMutation,
   useGetNoticesQuery, useCreateNoticeMutation, useUpdateNoticeMutation, useDeleteNoticeMutation,
   useGetCertificateRegisterQuery, useGetCertificatesQuery, useIssueCertificateMutation, useGetParentAccountsQuery, useLinkParentMutation, useUnlinkParentMutation,
+  useGetParentsQuery, useUpdateParentLoginMutation, useBulkParentLoginsMutation, useResetParentPasswordMutation, useSetParentActiveMutation,
+  useGetRecycleBinQuery, useRestoreStudentMutation,
   useGetChildrenQuery, useGetChildFeesQuery, useGetChildAttendanceQuery, useGetChildResultsQuery, useGetChildExamsQuery,
   useGetPortalNoticesQuery, useGetPortalBusesQuery,
 } = opsApi;

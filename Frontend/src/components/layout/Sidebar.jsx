@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { APP_SHORT, MENU } from '../../constants/menu';
 import SchoolLogo from '../common/SchoolLogo';
 import { hasPermission } from '../../hooks/usePermission';
-import { selectPermissions } from '../../store/slices/authSlice';
+import { selectPermissions, selectUser } from '../../store/slices/authSlice';
 import { setMobileNav, toggleSidebar } from '../../store/slices/uiSlice';
 
 function NavItem({ item, collapsed, onNavigate }) {
@@ -33,19 +33,22 @@ function NavItem({ item, collapsed, onNavigate }) {
 export default function Sidebar() {
   const dispatch = useDispatch();
   const perms = useSelector(selectPermissions);
+  const isSuperAdmin = useSelector(selectUser)?.role?.slug === 'super_admin';
+  // superAdminOnly items (e.g. Recycle Bin) are hidden from every other role
+  const allowed = (i) => hasPermission(perms, i.permission) && (!i.superAdminOnly || isSuperAdmin);
   const { sidebarCollapsed, mobileNavOpen } = useSelector((s) => s.ui);
   const closeMobile = () => dispatch(setMobileNav(false));
 
   // Filter by permission; drop sections that end up empty
   const menu = MENU.map((entry) =>
-    entry.section ? { ...entry, items: entry.items.filter((i) => hasPermission(perms, i.permission)) } : entry,
+    entry.section ? { ...entry, items: entry.items.filter(allowed) } : entry,
   ).filter((e) => (e.section ? e.items.length : hasPermission(perms, e.permission)));
 
   const render = (collapsed) => (
     <div className="flex h-full flex-col">
       <div className={clsx('flex items-center gap-3 px-4 py-5', collapsed && 'justify-center px-0')}>
         <SchoolLogo className={collapsed ? 'h-11 w-11' : 'h-12 w-12'} />
-        {!collapsed && <span className="truncate text-base font-semibold">{APP_SHORT}</span>}
+        {!collapsed && <span className="truncate text-[1rem] font-semibold">{APP_SHORT}</span>}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4" aria-label="Main">

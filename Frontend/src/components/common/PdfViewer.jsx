@@ -74,7 +74,7 @@ export default function PdfViewer() {
     <div className="fixed inset-0 z-[60] flex items-stretch justify-center bg-ink/40 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label={doc.title}>
       <div className="neu-card flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-none sm:rounded-neu">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 px-3 py-2.5 sm:px-5">
-          <h2 className="min-w-0 truncate text-sm font-semibold sm:text-base">{doc.title}</h2>
+          <h2 className="min-w-0 truncate text-sm font-semibold sm:text-[1rem]">{doc.title}</h2>
           <div className="flex items-center gap-2">
             <Button variant="primary" size="sm" icon={Printer} disabled={!doc.src} onClick={print}>Print</Button>
             <Button size="sm" icon={Download} disabled={!doc.src} onClick={download}><span className="hidden sm:inline">Download</span></Button>

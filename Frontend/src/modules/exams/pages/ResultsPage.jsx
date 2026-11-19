@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ClipboardEdit, FileText, IdCard, Trophy } from 'lucide-react';
+import { ClipboardEdit, FileSpreadsheet, FileText, IdCard, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useGetExamsQuery, useGetResultQuery } from '../../../api/opsApi';
@@ -33,7 +33,8 @@ export default function ResultsPage() {
           f.classId && (
             <>
               {f.examId && <Button icon={IdCard} onClick={() => openPdf(`/exams/${f.examId}/admit-cards/pdf`, params, 'Admit cards')}>Admit cards</Button>}
-              <Button variant="primary" icon={FileText} onClick={() => openPdf('/exams/report-cards/pdf', params, 'Marksheets')}>Marksheets</Button>
+              {f.examId && <Button icon={FileSpreadsheet} onClick={() => openPdf(`/exams/${f.examId}/test-marksheets/pdf`, params, `${exams.find((x) => String(x.id) === f.examId)?.name ?? 'Test'} marksheets`)}>Test marksheets</Button>}
+              <Button variant="primary" icon={FileText} onClick={() => openPdf('/exams/report-cards/pdf', params, 'Marksheets')}>Full-year marksheets</Button>
             </>
           )
         }
@@ -82,6 +83,7 @@ export default function ResultsPage() {
                       <td className="px-2 py-1.5 text-center"><Badge tone={r.result === 'Pass' ? 'success' : r.result === 'Fail' ? 'danger' : 'neutral'}>{r.result}</Badge></td>
                       <td className="px-2 py-1.5 text-right">
                         <div className="flex justify-end gap-1.5">
+                          <Button size="icon-sm" icon={FileSpreadsheet} aria-label="Marksheet for this exam" title={`${data.exam.name} marksheet`} onClick={() => openPdf(`/exams/${f.examId}/test-marksheet/${r.enrollmentId}/pdf`, undefined, `${data.exam.name} · ${r.student.name}`)} />
                           <Button size="icon-sm" icon={ClipboardEdit} aria-label="Marksheet details" title="SUPW / Art / grades / health" onClick={() => setExtras(r)} />
                           <Button size="icon-sm" icon={FileText} aria-label="Marksheet" title="Marksheet PDF" onClick={() => openPdf(`/exams/report-card/${r.enrollmentId}/pdf`, undefined, `Marksheet · ${r.student.name}`)} />
                         </div>

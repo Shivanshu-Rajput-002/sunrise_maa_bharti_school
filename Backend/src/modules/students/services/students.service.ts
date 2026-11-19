@@ -1,4 +1,6 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { QueryTypes } from 'sequelize';
+import { SUPER_ADMIN_ROLE } from '../../../common/constants';
 import { InjectModel } from '@nestjs/sequelize';
 import { promises as fs } from 'fs';
 import { join } from 'path';
@@ -22,6 +24,7 @@ import {
 } from '../dto/student.dto';
 import { StudentEnrollment } from '../entities/student-enrollment.entity';
 import { Student } from '../entities/student.entity';
+import { ParentsService } from './parents.service';
 
 const ENROLLMENT_FIELDS = ['classId', 'sectionId', 'mediumId', 'rollNo', 'isHostel', 'usesTransport', 'transportRouteId'] as const;
 
@@ -42,6 +45,7 @@ export class StudentsService {
     private readonly sequelize: Sequelize,
     private readonly sequences: SequenceService,
     private readonly audit: AuditService,
+    private readonly parents: ParentsService,
   ) {}
 
   /**
@@ -151,7 +155,10 @@ export class StudentsService {
         return s;
       });
       this.audit.log({ userId: actor.id, sessionId: scope.sessionId, action: 'create', entity: 'student', entityId: student.id });
-      return this.findOne(student.id, scope);
+      // Parent portal login is created (or the family login linked) right away
+      const parentLogin = await this.parents.ensureLogin(student).catch(() => ({ username: '', password: null, status: 'skipped' as const, note: 'Could not create the parent login' }));
+      const full = await this.findOne(student.id, scope);
+      return { ...full, parentLogin };
     } catch (e) {
       throw this.mapUnique(e);
     }
@@ -234,12 +241,72 @@ export class StudentsService {
     return this.findOne(id, scope);
   }
 
+  /** What is attached to a student — any of these means the record must be kept */
+  private async usage(studentId: number) {
+    const [row] = await this.sequelize.query<{ fees: number; attendance: number; marks: number; certificates: number }>(
+      `SELECT
+        (SELECT COUNT(*) FROM fee_payments WHERE student_id = :id) AS fees,
+        (SELECT COUNT(*) FROM attendance a JOIN student_enrollments e ON e.id = a.enrollment_id WHERE e.student_id = :id) AS attendance,
+        (SELECT COUNT(*) FROM exam_marks m JOIN student_enrollments e ON e.id = m.enrollment_id WHERE e.student_id = :id) AS marks,
+        (SELECT COUNT(*) FROM certificates WHERE student_id = :id) AS certificates`,
+      { replacements: { id: studentId }, type: QueryTypes.SELECT },
+    );
+    return { fees: Number(row.fees), attendance: Number(row.attendance), marks: Number(row.marks), certificates: Number(row.certificates) };
+  }
+
+  /**
+   * Delete is only for a wrong / duplicate admission: super admin only, and only while the
+   * student has no fee receipt, attendance, marks or certificate. Everyone else uses
+   * status (Left / TC issued). Deleted students go to the Recycle Bin (restorable).
+   */
   async remove(id: number, actor: AuthUser) {
+    if (actor.roleSlug !== SUPER_ADMIN_ROLE) throw new ForbiddenException('Only the super admin can delete a student. Use "Change status" → Left instead.');
     const student = await this.students.findByPk(id);
     if (!student) throw new NotFoundException('Student not found');
-    await student.destroy(); // soft delete; enrollments kept for history
-    this.audit.log({ userId: actor.id, action: 'delete', entity: 'student', entityId: id });
+    const u = await this.usage(id);
+    const used = [u.fees && `${u.fees} fee receipt(s)`, u.attendance && `${u.attendance} attendance day(s)`, u.marks && `${u.marks} exam mark(s)`, u.certificates && `${u.certificates} certificate(s)`].filter(Boolean);
+    if (used.length) {
+      throw new BadRequestException(`${student.name} cannot be deleted because the school has records for this student (${used.join(', ')}). Use "Change status" → Left or issue a TC instead.`);
+    }
+    await student.destroy(); // soft delete → Recycle Bin
+    this.audit.log({ userId: actor.id, action: 'delete', entity: 'student', entityId: id, meta: { name: student.name, admissionNo: student.admissionNo } });
     return { id };
+  }
+
+  /** Recycle Bin: students deleted in the last 30 days */
+  async recycleBin(actor: AuthUser) {
+    if (actor.roleSlug !== SUPER_ADMIN_ROLE) throw new ForbiddenException('Only the super admin can open the Recycle Bin.');
+    const since = new Date(Date.now() - 30 * 86400_000);
+    const rows = await this.students.findAll({
+      paranoid: false,
+      where: { deletedAt: { [Op.gte]: since } },
+      attributes: ['id', 'name', 'admissionNo', 'fatherName', 'fatherMobile', 'deletedAt'],
+      include: [{ model: StudentEnrollment, attributes: ['id', 'sessionId'], include: [{ model: SchoolClass, attributes: ['name'] }, { model: Section, attributes: ['name'] }] }],
+      order: [['deletedAt', 'DESC']],
+    });
+    return rows.map((s) => {
+      const e = [...(s.enrollments ?? [])].sort((a, b) => b.sessionId - a.sessionId)[0];
+      const deletedAt = s.getDataValue('deletedAt') as Date;
+      return {
+        id: s.id,
+        name: s.name,
+        admissionNo: s.admissionNo,
+        fatherName: s.fatherName,
+        fatherMobile: s.fatherMobile,
+        className: e ? `${e.schoolClass?.name ?? ''}${e.section ? '-' + e.section.name : ''}` : '',
+        deletedAt,
+        daysLeft: Math.max(0, 30 - Math.floor((Date.now() - new Date(deletedAt).getTime()) / 86400_000)),
+      };
+    });
+  }
+
+  async restore(id: number, actor: AuthUser) {
+    if (actor.roleSlug !== SUPER_ADMIN_ROLE) throw new ForbiddenException('Only the super admin can restore a student.');
+    const s = await this.students.findByPk(id, { paranoid: false });
+    if (!s || !s.getDataValue('deletedAt')) throw new NotFoundException('This student is not in the Recycle Bin');
+    await s.restore();
+    this.audit.log({ userId: actor.id, action: 'restore', entity: 'student', entityId: id, meta: { name: s.name, admissionNo: s.admissionNo } });
+    return { id, name: s.name };
   }
 
   /** Re-number a class/section 1..n by name or admission number */
@@ -344,7 +411,7 @@ export class StudentsService {
     const where: WhereOptions = { sessionId: scope.sessionId, status: { [Op.ne]: 'left' } };
     if (scope.mediumId) Object.assign(where, { mediumId: scope.mediumId });
 
-    const [total, byGender, byClass, newAdmissions] = await Promise.all([
+    const [total, byGender, byClass, newAdmissions, classGender] = await Promise.all([
       this.enrollments.count({ where }),
       this.enrollments.findAll({
         where,
@@ -363,13 +430,28 @@ export class StudentsService {
         nest: true,
       }),
       this.enrollments.count({ where: { ...where, enrollmentType: 'new' } }),
+      this.enrollments.findAll({
+        where,
+        attributes: ['classId', [this.sequelize.col('student.gender'), 'gender'], [this.sequelize.fn('COUNT', this.sequelize.col('StudentEnrollment.id')), 'count']],
+        include: [{ model: Student, attributes: [], required: true }],
+        group: ['classId', 'student.gender'],
+        raw: true,
+      }),
     ]);
+    const genderOf = (classId: number, g: string) =>
+      Number((classGender as any[]).find((r) => r.classId === classId && r.gender === g)?.count ?? 0);
 
     return {
       total,
       newAdmissions,
       byGender: Object.fromEntries((byGender as any[]).map((r) => [r.gender, Number(r.count)])),
-      byClass: (byClass as any[]).map((r) => ({ classId: r.classId, name: r.schoolClass.name, count: Number(r.count) })),
+      byClass: (byClass as any[]).map((r) => ({
+        classId: r.classId,
+        name: r.schoolClass.name,
+        count: Number(r.count),
+        boys: genderOf(r.classId, 'male'),
+        girls: genderOf(r.classId, 'female'),
+      })),
     };
   }
 

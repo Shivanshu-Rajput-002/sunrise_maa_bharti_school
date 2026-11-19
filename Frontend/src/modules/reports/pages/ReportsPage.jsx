@@ -1,4 +1,4 @@
-import { CalendarCheck, FileDown, FileText, IndianRupee, ListChecks, Receipt, Users, UsersRound } from 'lucide-react';
+import { CalendarCheck, FileDown, FileText, IndianRupee, Layers, ListChecks, Receipt, Users, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import Button from '../../../components/common/Button';
 import Card from '../../../components/common/Card';
@@ -20,6 +20,7 @@ const REPORTS = [
   { type: 'collection', title: 'Fee collection', desc: 'Every receipt in the period with discount, fine and mode.', icon: Receipt, filters: ['class', 'dates'], needs: 'fees.view' },
   { type: 'daywise', title: 'Day-wise collection', desc: 'Daily totals split by cash / UPI / online / cheque / bank.', icon: IndianRupee, filters: ['dates'], needs: 'fees.view' },
   { type: 'dues', title: 'Fee dues', desc: 'Student-wise payable, paid and due (till today and full year).', icon: ListChecks, filters: ['class'], needs: 'fees.view' },
+  { type: 'installments', title: 'Installment-wise collection', desc: 'Per student and installment: payable, paid and due, with totals for every installment.', icon: Layers, filters: ['class'], needs: 'fees.view' },
   { type: 'ptm', title: 'PTM sheet', desc: 'Class list with parent name, mobile and a signature column.', icon: FileText, filters: ['class'], required: ['class'], pdf: true },
 ];
 

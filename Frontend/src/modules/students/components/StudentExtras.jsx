@@ -58,7 +58,7 @@ function IssueModal({ student, onClose }) {
   );
 }
 
-function ParentModal({ student, onClose }) {
+export function ParentModal({ student, onClose }) {
   const [mode, setMode] = useState('new');
   const [search, setSearch] = useState('');
   const debounced = useDebounce(search);

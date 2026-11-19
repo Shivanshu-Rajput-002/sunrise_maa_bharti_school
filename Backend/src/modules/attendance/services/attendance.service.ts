@@ -9,6 +9,7 @@ import { AuthUser, RequestScope } from '../../../common/interfaces/request-conte
 import { AcademicSession } from '../../academic/entities/academic-session.entity';
 import { AuditService } from '../../admin/services/audit.service';
 import { StudentEnrollment } from '../../students/entities/student-enrollment.entity';
+import { StaffService } from '../../staff/services/staff.service';
 import { Student } from '../../students/entities/student.entity';
 import { BiometricPunchDto, CreateDeviceDto, CreateHolidayDto, MarkAttendanceDto, RegisterQueryDto, SheetQueryDto } from '../dto/attendance.dto';
 import { Attendance, ATTENDANCE_STATUSES, AttendanceStatus, BiometricDevice, Holiday } from '../entities/attendance.entities';
@@ -26,6 +27,7 @@ export class AttendanceService {
     @InjectModel(Student) private readonly students: typeof Student,
     @InjectModel(AcademicSession) private readonly sessions: typeof AcademicSession,
     private readonly audit: AuditService,
+    private readonly staffService: StaffService,
   ) {}
 
   // ---------- daily sheet ----------
@@ -319,12 +321,15 @@ export class AttendanceService {
     const enrBy = new Map(enrRows.map((e) => [`${e.studentId}:${e.sessionId}`, e.id]));
 
     const records: Record<string, unknown>[] = [];
+    // punchIds that are not students may belong to staff
+    const staffPending: { r: (typeof results)[number]; punchId: string; date: string; time: string }[] = [];
     let i = 0;
     for (const r of results) {
       if (r.status !== 'ok') continue;
       const { p, date, time } = punches[i++];
       const studentId = studentBy.get(p.punchId);
       const sessionId = sessionFor(date);
+      if (!studentId) staffPending.push({ r, punchId: p.punchId, date, time });
       if (!studentId || !sessionId) {
         r.status = 'skipped';
         r.reason = !studentId ? 'unknown punchId' : 'date outside any session';
@@ -339,8 +344,16 @@ export class AttendanceService {
       records.push({ sessionId, enrollmentId, date, status: 'P', source: 'biometric', inTime: time });
     }
     if (records.length) await this.attendance.bulkCreate(records, { ignoreDuplicates: true });
+    const staffMatched = await this.staffService.ingestPunches(staffPending.map(({ punchId, date, time }) => ({ punchId, date, time })));
+    let staffSaved = 0;
+    for (const x of staffPending)
+      if (staffMatched.has(x.punchId)) {
+        x.r.status = 'ok';
+        x.r.reason = 'staff';
+        staffSaved++;
+      }
     await device.update({ lastSeenAt: new Date() });
-    return { received: list.length, saved: records.length, results };
+    return { received: list.length, saved: records.length + staffSaved, results };
   }
 
   /**

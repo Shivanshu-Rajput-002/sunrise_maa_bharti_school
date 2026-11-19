@@ -21,6 +21,7 @@ export default {
         warning: v('warning'),
         danger: v('danger'),
         chart: v('chart-1'),
+        chart2: v('chart-2'),
       },
       boxShadow: {
         // Raised

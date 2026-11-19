@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { UniqueConstraintError } from 'sequelize';
-import { SUPER_ADMIN_ROLE } from '../../../common/constants';
+import { SUPER_ADMIN_ROLE, PARENT_ROLE } from '../../../common/constants';
 import { AuthUser } from '../../../common/interfaces/request-context';
 import { CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from '../dto/role.dto';
 import { Permission } from '../entities/permission.entity';
@@ -70,6 +70,7 @@ export class RolesService {
   async setPermissions(id: number, dto: SetRolePermissionsDto, actor: AuthUser) {
     const role = await this.get(id);
     if (role.slug === SUPER_ADMIN_ROLE) throw new BadRequestException('Super admin always has all permissions');
+    if (role.slug === PARENT_ROLE) throw new BadRequestException('Parent permissions are locked to the parent portal and cannot be changed.');
 
     const perms = await this.permissions.findAll({ where: { key: dto.permissions }, attributes: ['id', 'key'] });
     if (perms.length !== dto.permissions.length) throw new BadRequestException('Unknown permission key in list');

@@ -2,7 +2,11 @@ import { ArrowLeft, Camera, IndianRupee, Pencil, Trash2, UserX } from 'lucide-re
 import StudentExtras from '../components/StudentExtras';
 import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { selectUser } from '../../../store/slices/authSlice';
+import { useGetSettingsQuery } from '../../../api/opsApi';
+import { CredentialsModal } from '../components/ParentCredentials';
 import Avatar from '../../../components/common/Avatar';
 import Badge from '../../../components/common/Badge';
 import Button from '../../../components/common/Button';
@@ -104,14 +108,21 @@ function StatusModal({ student, onClose }) {
 export default function StudentProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: s, isLoading, isError, error } = useGetStudentQuery(Number(id));
+  const { data: settings } = useGetSettingsQuery();
+  // Set by the admission form: parent login created/linked for this new student
+  const newLogin = location.state?.parentLogin;
+  const closeNewLogin = () => navigate(location.pathname, { replace: true, state: null });
   const [upload, up] = useUploadStudentPhotoMutation();
   const [del, d] = useDeleteStudentMutation();
   const [statusOpen, setStatusOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileRef = useRef(null);
   const canUpdate = usePermission('students.update');
-  const canDelete = usePermission('students.delete');
+  // Delete is only for a wrong admission and only the super admin can do it
+  const isSuperAdmin = useSelector(selectUser)?.role?.slug === 'super_admin';
+  const canDelete = usePermission('students.delete') && isSuperAdmin;
   const canCollect = usePermission('fees.collect');
 
   if (isLoading) return <Loader />;
@@ -272,11 +283,36 @@ export default function StudentProfilePage() {
       <ConfirmDialog
         open={deleting}
         title={`Delete ${s.name}?`}
-        message="The student is hidden from all lists. Prefer 'Status → Left' for students who left the school."
+        message="Only for a wrong or duplicate admission. A student with fee receipts, attendance, marks or certificates cannot be deleted — use Status → Left. Deleted students can be restored from the Recycle Bin for 30 days."
         loading={d.isLoading}
         onConfirm={onDelete}
         onClose={() => setDeleting(false)}
       />
+      {newLogin && s && (
+        <CredentialsModal
+          schoolName={settings?.school?.name ?? 'School'}
+          onClose={closeNewLogin}
+          result={{
+            title: 'Admission done — parent portal login',
+            summary:
+              newLogin.status === 'created'
+                ? 'A new parent login was created. Give these details to the parent.'
+                : newLogin.status === 'linked'
+                  ? "This child was added to the family's existing parent login (same mobile). The password did not change."
+                  : `No parent login was created: ${newLogin.note ?? 'add a mobile number and create it from Students → Parents.'}`,
+            rows: [{
+              student: s.name,
+              admissionNo: s.admissionNo,
+              className: s.currentEnrollment ? `${s.currentEnrollment.schoolClass?.name ?? ''}${s.currentEnrollment.section ? '-' + s.currentEnrollment.section.name : ''}` : '',
+              parentName: s.fatherName || s.motherName || '',
+              username: newLogin.username,
+              password: newLogin.password,
+              status: newLogin.status,
+              note: newLogin.note,
+            }],
+          }}
+        />
+      )}
     </>
   );
 }

@@ -77,6 +77,8 @@ export class UsersService {
       throw new BadRequestException('Only a super admin can delete a super admin');
     }
     await user.destroy(); // soft delete (paranoid)
+    // A deleted parent login must not stay attached to the children
+    await this.users.sequelize!.query('UPDATE students SET parent_user_id = NULL WHERE parent_user_id = ?', { replacements: [id] });
     this.audit.log({ userId: actor.id, action: 'delete', entity: 'user', entityId: id });
     return { id };
   }

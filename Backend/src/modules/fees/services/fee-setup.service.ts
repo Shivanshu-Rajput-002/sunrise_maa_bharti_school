@@ -158,7 +158,7 @@ export class FeeSetupService {
   // ---------- concession ----------
   async setConcession(enrollmentId: number, dto: ConcessionDto, scope: RequestScope, actor: AuthUser) {
     const enr = await this.enrollments.findOne({ where: { id: enrollmentId, sessionId: scope.sessionId } });
-    if (!enr) throw new NotFoundException('Enrollment not found in this session');
+    if (!enr) throw new NotFoundException('This student is not enrolled in the selected session');
     if (dto.type === 'percent' && dto.value > 100) throw new BadRequestException('Percent cannot exceed 100');
     await this.concessions.upsert({ enrollmentId, type: dto.type, value: toMoney(dto.value), reason: dto.reason ?? null });
     this.audit.log({ userId: actor.id, sessionId: scope.sessionId, action: 'update', entity: 'fee_concession', entityId: enrollmentId, meta: { ...dto } });

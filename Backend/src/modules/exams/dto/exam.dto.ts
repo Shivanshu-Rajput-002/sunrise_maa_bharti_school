@@ -28,6 +28,7 @@ export class CreateExamDto {
   @IsOptional() @IsDateString() endDate?: string;
   @IsOptional() @IsBoolean() includeInReport?: boolean;
   @IsOptional() @IsBoolean() isPublished?: boolean;
+  @IsOptional() @IsBoolean() admitCardVisible?: boolean;
   @IsOptional() @IsIn([...REPORT_COLUMNS_HI, null]) reportColumn?: ReportColumn | null;
   @IsOptional() @IsIn([...REPORT_COLUMNS_EN, null]) reportColumnEn?: ReportColumnEn | null;
   @IsOptional() @IsString() @MaxLength(2000) instructions?: string | null;
@@ -57,6 +58,13 @@ export class SaveScheduleDto {
 
 export class ClassQueryDto {
   @Type(() => Number) @IsInt() classId: number;
+  @IsOptional() @Type(() => Number) @IsInt() sectionId?: number;
+  @IsOptional() @Type(() => Number) @IsInt() mediumId?: number;
+}
+
+/** Admit cards: one class, or every class with this exam's timetable when classId is empty */
+export class AdmitQueryDto {
+  @IsOptional() @Type(() => Number) @IsInt() classId?: number;
   @IsOptional() @Type(() => Number) @IsInt() sectionId?: number;
   @IsOptional() @Type(() => Number) @IsInt() mediumId?: number;
 }

@@ -231,4 +231,17 @@ export class CashbookEntry extends Model {
 
   @BelongsTo(() => User, 'createdBy')
   declare creator?: User;
+
+  /** Entries are cancelled with a reason, never deleted */
+  @Column({ type: DataType.ENUM('active', 'cancelled'), allowNull: false, defaultValue: 'active' })
+  declare status: 'active' | 'cancelled';
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare cancelReason: string | null;
+
+  @Column({ type: DataType.INTEGER.UNSIGNED, allowNull: true })
+  declare cancelledBy: number | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare cancelledAt: Date | null;
 }

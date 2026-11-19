@@ -18,11 +18,8 @@ import { Exam, ExamMark, ExamSchedule } from '../entities/exam.entities';
 import { ExamPrintService } from './exam-print.service';
 
 const gradeFor = (pct: number, bands: GradeBand[]) => bands.find((b) => pct >= b.min)?.grade ?? '-';
-/** Theory + practical max */
-export const fullMax = (s: ExamSchedule) => toMoney(toMoney(s.maxMarks) + (s.practicalMax != null ? toMoney(s.practicalMax) : 0));
-/** Theory + practical obtained (null when absent / not entered) */
-export const markValue = (m?: ExamMark) =>
-  !m || m.isAbsent || (m.marks == null && m.practicalMarks == null) ? null : toMoney(toMoney(m.marks ?? 0) + toMoney(m.practicalMarks ?? 0));
+export { fullMax, markValue } from './exam-utils';
+import { fullMax, markValue } from './exam-utils';
 
 @Injectable()
 export class ExamsService {
@@ -127,7 +124,7 @@ export class ExamsService {
     const sch = await this.schedules.findByPk(q.scheduleId, {
       include: [{ model: Exam, where: { sessionId: scope.sessionId }, required: true }, { model: Subject, attributes: ['id', 'name'] }, { model: SchoolClass, attributes: ['id', 'name'] }],
     });
-    if (!sch) throw new NotFoundException('Exam subject not found in this session');
+    if (!sch) throw new NotFoundException('This exam subject was not found in the selected session');
     const enrs = await this.classEnrollments(scope, sch.classId, q.sectionId, q.mediumId);
     const existing = await this.marks.findAll({ where: { scheduleId: sch.id, enrollmentId: enrs.map((e) => e.id) } });
     const by = new Map(existing.map((m) => [m.enrollmentId, m]));
@@ -151,7 +148,7 @@ export class ExamsService {
 
   async saveMarks(dto: SaveMarksDto, scope: RequestScope, actor: AuthUser) {
     const sch = await this.schedules.findByPk(dto.scheduleId, { include: [{ model: Exam, where: { sessionId: scope.sessionId }, required: true }] });
-    if (!sch) throw new NotFoundException('Exam subject not found in this session');
+    if (!sch) throw new NotFoundException('This exam subject was not found in the selected session');
     const max = toMoney(sch.maxMarks);
     const pMax = sch.practicalMax != null ? toMoney(sch.practicalMax) : null;
     for (const r of dto.records) {
@@ -281,9 +278,14 @@ export class ExamsService {
     };
   }
 
+  /** Parent portal: admit card download is allowed only after the school releases it */
+  async isAdmitCardReleased(examId: number, sessionId: number) {
+    return !!(await this.exams.count({ where: { id: examId, sessionId, admitCardVisible: true } }));
+  }
+
   // ---------- PDFs (old school formats, see ExamPrintService) ----------
   /** Admit cards for a class, or for a single enrollment (parent portal) */
-  admitCardsPdf(examId: number, q: ClassQueryDto, scope: RequestScope, onlyEnrollmentId?: number) {
+  admitCardsPdf(examId: number, q: { classId?: number; sectionId?: number; mediumId?: number }, scope: RequestScope, onlyEnrollmentId?: number) {
     return this.print.admitCardsPdf(examId, q, scope, onlyEnrollmentId);
   }
 

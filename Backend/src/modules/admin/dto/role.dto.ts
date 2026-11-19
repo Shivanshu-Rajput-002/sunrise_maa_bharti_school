@@ -1,4 +1,5 @@
-import { ArrayUnique, IsArray, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ArrayUnique, IsArray, IsDateString, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export class CreateRoleDto {
   @IsString()
@@ -23,4 +24,14 @@ export class SetRolePermissionsDto {
   @ArrayUnique()
   @IsString({ each: true })
   permissions: string[];
+}
+
+export class AuditQueryDto {
+  @IsOptional() @Type(() => Number) @IsInt() userId?: number;
+  @IsOptional() @IsString() @MaxLength(60) entity?: string;
+  @IsOptional() @IsString() @MaxLength(40) action?: string;
+  @IsOptional() @IsDateString() from?: string;
+  @IsOptional() @IsDateString() to?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit?: number;
 }

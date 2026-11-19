@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { CurrentUser, Permissions, Scope } from '../../../common/decorators';
 import type { AuthUser, RequestScope } from '../../../common/interfaces/request-context';
-import { ClassQueryDto, CreateExamDto, MarksheetExtrasDto, MarksQueryDto, SaveMarksDto, SaveScheduleDto, UpdateExamDto } from '../dto/exam.dto';
+import { AdmitQueryDto, ClassQueryDto, CreateExamDto, MarksheetExtrasDto, MarksQueryDto, SaveMarksDto, SaveScheduleDto, UpdateExamDto } from '../dto/exam.dto';
 import { ExamPrintService } from '../services/exam-print.service';
 import { ExamsService } from '../services/exams.service';
+import { MarksExcelService } from '../services/marks-excel.service';
+
+const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 const sendPdf = (res: Response, pdf: Buffer, name: string) => {
   res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${name}"`, 'Cache-Control': 'no-store' });
@@ -16,7 +20,43 @@ export class ExamsController {
   constructor(
     private readonly exams: ExamsService,
     private readonly print: ExamPrintService,
+    private readonly marksExcel: MarksExcelService,
   ) {}
+
+  // ---------- marks via Excel ----------
+  @Get(':id/marks-template')
+  @Permissions('exams.view')
+  async marksTemplate(@Param('id', ParseIntPipe) id: number, @Query() q: ClassQueryDto, @Scope() s: RequestScope, @Res() res: Response) {
+    const { buffer, filename } = await this.marksExcel.template(id, q, s);
+    res.set({ 'Content-Type': XLSX, 'Content-Disposition': `attachment; filename="${filename}"`, 'Cache-Control': 'no-store' });
+    res.end(buffer);
+  }
+
+  @Post(':id/marks-import')
+  @Permissions('exams.marks')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_r, f, cb) => (f.mimetype === XLSX || /\.xlsx$/i.test(f.originalname) ? cb(null, true) : cb(new BadRequestException('Please upload the .xlsx marks template'), false)),
+    }),
+  )
+  marksImport(@Param('id', ParseIntPipe) id: number, @Query() q: ClassQueryDto, @UploadedFile() file: Express.Multer.File, @Scope() s: RequestScope, @CurrentUser() u: AuthUser) {
+    if (!file) throw new BadRequestException('Please choose the filled Excel file');
+    return this.marksExcel.import(id, q, file.buffer, s, u);
+  }
+
+  // ---------- single test marksheet ----------
+  @Get(':id/test-marksheets/pdf')
+  @Permissions('exams.view')
+  async testMarksheets(@Param('id', ParseIntPipe) id: number, @Query() q: AdmitQueryDto, @Scope() s: RequestScope, @Res() res: Response) {
+    sendPdf(res, await this.print.testMarksheetPdf(id, q, s), `test-marksheets-${id}.pdf`);
+  }
+
+  @Get(':id/test-marksheet/:enrollmentId/pdf')
+  @Permissions('exams.view')
+  async testMarksheet(@Param('id', ParseIntPipe) id: number, @Param('enrollmentId', ParseIntPipe) enrollmentId: number, @Scope() s: RequestScope, @Res() res: Response) {
+    sendPdf(res, await this.print.testMarksheetPdf(id, { enrollmentIds: [enrollmentId] }, s), `test-marksheet-${enrollmentId}.pdf`);
+  }
 
   /** SUPW / Art / Jeevan Kaushal marks, co-scholastic grades, health, remark for one student */
   @Get('marksheet-extras/:enrollmentId')
@@ -105,7 +145,7 @@ export class ExamsController {
 
   @Get(':id/admit-cards/pdf')
   @Permissions('exams.view')
-  async admitCards(@Param('id', ParseIntPipe) id: number, @Query() q: ClassQueryDto, @Scope() s: RequestScope, @Res() res: Response) {
-    sendPdf(res, await this.exams.admitCardsPdf(id, q, s), `admit-cards-${id}.pdf`);
+  async admitCards(@Param('id', ParseIntPipe) id: number, @Query() q: AdmitQueryDto, @Scope() s: RequestScope, @Res() res: Response) {
+    sendPdf(res, await this.exams.admitCardsPdf(id, q, s), q.classId ? `admit-cards-${id}-class-${q.classId}.pdf` : `admit-cards-${id}-all.pdf`);
   }
 }

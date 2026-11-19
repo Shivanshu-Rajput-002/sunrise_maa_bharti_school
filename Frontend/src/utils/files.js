@@ -3,20 +3,14 @@ import axiosInstance from './axiosInstance';
 
 /** Error bodies of blob requests arrive as Blobs — turn them back into a message */
 async function blobError(err) {
-  try {
-    if (err?.data instanceof Blob) {
-      const j = JSON.parse(await err.data.text());
-      return Array.isArray(j.message) ? j.message.join(', ') : j.message;
-    }
-  } catch {
-    /* ignore */
-  }
-  return err?.message || 'Could not load the file';
+  // axiosInstance already turned the error into a readable { message }
+  return err?.message || 'Could not open the file. Please try again.';
 }
 
 async function fetchBlob(url, params) {
   // Interceptor unwraps res.data, so this resolves to the Blob itself
-  return axiosInstance.get(url, { params, responseType: 'blob' });
+  // Big PDFs (all admit cards / marksheets of the school) can take a while to print
+  return axiosInstance.get(url, { params, responseType: 'blob', timeout: 300_000 });
 }
 
 /** Fetches a PDF (with the auth header) and returns an object URL; caller revokes it */

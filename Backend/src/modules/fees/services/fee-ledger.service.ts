@@ -270,6 +270,8 @@ export class FeeLedgerService {
         rollNo: e.rollNo,
         totals: l.totals,
         overdueInstallments: l.overdueInstallments,
+        /** Per-installment totals (installment-wise report) */
+        installments: l.installments.map((i) => ({ id: i.id, name: i.name, dueDate: i.dueDate, overdue: i.overdue, ...i.totals })),
       };
     });
   }

@@ -359,7 +359,7 @@ export default function CollectFeePage() {
                   <div className="flex justify-between"><span className="text-muted">Selected</span><span className="tabular-nums">{formatMoney(gross)}</span></div>
                   {Number(form.discount) > 0 && <div className="flex justify-between"><span className="text-muted">Discount</span><span className="tabular-nums">− {formatMoney(Number(form.discount))}</span></div>}
                   {Number(form.fine) > 0 && <div className="flex justify-between"><span className="text-muted">Late fee</span><span className="tabular-nums">+ {formatMoney(Number(form.fine))}</span></div>}
-                  <div className="flex justify-between border-t border-line pt-2 text-base font-semibold"><span>Total</span><span className="tabular-nums text-primary">{formatMoney(net)}</span></div>
+                  <div className="flex justify-between border-t border-line pt-2 text-[1rem] font-semibold"><span>Total</span><span className="tabular-nums text-primary">{formatMoney(net)}</span></div>
                 </div>
                 <Button variant="primary" size="lg" icon={IndianRupee} className="w-full justify-center" disabled={gross <= 0} loading={c.isLoading} onClick={submit}>
                   Collect {gross > 0 ? formatMoney(net) : ''}

@@ -6,6 +6,7 @@ import { SchoolClass } from '../../academic/entities/school-class.entity';
 import { Section } from '../../academic/entities/section.entity';
 import { AttendanceService } from '../../attendance/services/attendance.service';
 import { NoticesService } from '../../communication/services/notices.service';
+import { ExamPrintService } from '../../exams/services/exam-print.service';
 import { ExamsService } from '../../exams/services/exams.service';
 import { FeePayment } from '../../fees/entities/fee.entities';
 import { FeeCollectionService } from '../../fees/services/fee-collection.service';
@@ -30,6 +31,7 @@ export class PortalService {
     private readonly feeCollection: FeeCollectionService,
     private readonly attendance: AttendanceService,
     private readonly exams: ExamsService,
+    private readonly print: ExamPrintService,
     private readonly notices: NoticesService,
   ) {}
 
@@ -75,7 +77,8 @@ export class PortalService {
     const enr = await this.childEnrollment(studentId, user, scope);
     const p = await this.payments.findOne({ where: { id: paymentId, enrollmentId: enr.id, status: 'paid' } });
     if (!p) throw new NotFoundException('Receipt not found');
-    return this.feeCollection.receiptPdf(paymentId, scope);
+    // Parents get a single copy (no school/student copy labels)
+    return this.feeCollection.receiptPdf(paymentId, scope, { single: true });
   }
 
   async attendanceSummary(studentId: number, user: AuthUser, scope: RequestScope) {
@@ -98,8 +101,16 @@ export class PortalService {
     return this.exams.examsForClass(scope.sessionId, enr.classId);
   }
 
+  /** One test's marksheet — only for results the school has published */
+  async testMarksheetPdf(studentId: number, examId: number, user: AuthUser, scope: RequestScope) {
+    const enr = await this.childEnrollment(studentId, user, scope);
+    return this.print.testMarksheetPdf(examId, { enrollmentIds: [enr.id] }, scope, { publishedOnly: true });
+  }
+
   async admitCardPdf(studentId: number, examId: number, user: AuthUser, scope: RequestScope) {
     const enr = await this.childEnrollment(studentId, user, scope);
+    const released = await this.exams.isAdmitCardReleased(examId, scope.sessionId);
+    if (!released) throw new ForbiddenException('The school has not released the admit card for this exam yet.');
     return this.exams.admitCardsPdf(examId, { classId: enr.classId, mediumId: enr.mediumId }, scope, enr.id);
   }
 

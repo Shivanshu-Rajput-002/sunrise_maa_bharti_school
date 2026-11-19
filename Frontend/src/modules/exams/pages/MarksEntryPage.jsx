@@ -1,7 +1,10 @@
-import { Save } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FileDown, FileUp, Save } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { baseApi } from '../../../app/store/baseApi';
+import Modal from '../../../components/common/Modal';
+import { downloadFile, uploadFile } from '../../../utils/files';
 import { useGetExamsQuery, useGetMarksQuery, useGetScheduleQuery, useSaveMarksMutation } from '../../../api/opsApi';
 import Button from '../../../components/common/Button';
 import Card from '../../../components/common/Card';
@@ -20,6 +23,32 @@ export default function MarksEntryPage() {
   const { data: schedule = [] } = useGetScheduleQuery({ examId: f.examId, classId: f.classId }, { skip: !f.examId || !f.classId });
   const { data, isFetching } = useGetMarksQuery({ scheduleId: f.scheduleId, sectionId: f.sectionId || undefined, mediumId: f.mediumId || undefined }, { skip: !f.scheduleId });
   const [save, s] = useSaveMarksMutation();
+  const dispatch = useDispatch();
+  const fileRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const excelParams = () => {
+    const p = new URLSearchParams({ classId: f.classId });
+    if (f.sectionId) p.set('sectionId', f.sectionId);
+    if (f.mediumId) p.set('mediumId', f.mediumId);
+    return p;
+  };
+  const examName = exams.find((x) => String(x.id) === String(f.examId))?.name ?? 'exam';
+  const onExcel = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    try {
+      const res = await uploadFile(`/exams/${f.examId}/marks-import?${excelParams()}`, file);
+      setImportResult(res);
+      dispatch(baseApi.util.invalidateTags(['Marks', 'Result']));
+      if (!res.errors.length) toast.success(`Marks saved for ${res.students} students`);
+    } catch (err) {
+      toast.error(err.message);
+    }
+    setImporting(false);
+  };
   const [rows, setRows] = useState({});
   const canEnter = usePermission('exams.marks');
 
@@ -65,7 +94,19 @@ export default function MarksEntryPage() {
 
   return (
     <>
-      <PageHeader title="Marks entry" subtitle="Pick exam, class and subject. Press Enter to jump to the next student." />
+      <PageHeader
+        title="Marks entry"
+        subtitle="Pick exam, class and subject. Press Enter to jump to the next student — or fill all subjects at once in Excel."
+        actions={
+          f.examId && f.classId && (
+            <>
+              <Button icon={FileDown} onClick={() => downloadFile(`/exams/${f.examId}/marks-template?${excelParams()}`, `marks-${examName}.xlsx`.replace(/[^\w.-]+/g, '-'))}>Excel template</Button>
+              {canEnter && <Button variant="primary" icon={FileUp} loading={importing} onClick={() => fileRef.current?.click()}>Upload marks Excel</Button>}
+              <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={onExcel} />
+            </>
+          )
+        }
+      />
       <Card className="mb-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Select label="Exam" value={f.examId} onChange={(e) => setF({ ...f, examId: e.target.value, scheduleId: '' })} placeholder="Select exam" options={exams.map((x) => ({ value: x.id, label: x.name }))} />
@@ -136,6 +177,23 @@ export default function MarksEntryPage() {
             </table>
           </div>
         </Card>
+      )}
+      {importResult && (
+        <Modal open onClose={() => setImportResult(null)} title="Marks upload result" footer={<Button variant="primary" onClick={() => setImportResult(null)}>OK</Button>}>
+          <p className="text-sm">
+            Saved <b>{importResult.saved}</b> subject marks for <b>{importResult.students}</b> students.
+          </p>
+          {importResult.skippedColumns.length > 0 && <p className="mt-2 text-sm text-warning">Columns not found in the file (left unchanged): {importResult.skippedColumns.join(', ')}</p>}
+          {importResult.errors.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium text-danger">These cells were not saved — fix them and upload again:</p>
+              <ul className="mt-1 max-h-60 list-disc overflow-auto pl-5 text-xs text-muted">
+                {importResult.errors.map((x, i) => <li key={i}>{x}</li>)}
+              </ul>
+              {importResult.moreErrors > 0 && <p className="mt-1 text-xs text-muted">…and {importResult.moreErrors} more</p>}
+            </div>
+          )}
+        </Modal>
       )}
     </>
   );

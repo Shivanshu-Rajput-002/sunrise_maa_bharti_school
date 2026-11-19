@@ -7,6 +7,7 @@
     "academic": ["view", "create", "update", "delete"],
     "students": ["view", "create", "update", "delete", "promote", "import", "certificates"],
     "attendance": ["view", "mark", "upload"],
+    "staff": ["view", "manage", "attendance"],
     "fees": ["view", "collect", "manage", "cancel"],
     "cashbook": ["view", "create", "update", "delete"],
     "exams": ["view", "manage", "marks"],
@@ -21,7 +22,7 @@
       "name": "Management",
       "permissions": [
         "dashboard.*", "academic.view", "students.view", "attendance.view", "fees.view",
-        "cashbook.view", "exams.view", "transport.view", "communication.*", "reports.*", "settings.view"
+        "cashbook.view", "exams.view", "transport.view", "communication.*", "reports.*", "settings.view", "staff.*"
       ]
     },
     "accountant": {
