@@ -4,7 +4,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { UniqueConstraintError } from 'sequelize';
 import { SUPER_ADMIN_ROLE, PARENT_ROLE } from '../../../common/constants';
 import { AuthUser } from '../../../common/interfaces/request-context';
-import { CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from '../dto/role.dto';
+import { CreateRoleDto, SetRolePermissionsDto } from '../dto/role.dto';
 import { Permission } from '../entities/permission.entity';
 import { RolePermission } from '../entities/role-permission.entity';
 import { Role } from '../entities/role.entity';
@@ -58,13 +58,6 @@ export class RolesService {
       if (e instanceof UniqueConstraintError) throw new ConflictException('Role slug already exists');
       throw e;
     }
-  }
-
-  async update(id: number, dto: UpdateRoleDto, actor: AuthUser) {
-    const role = await this.get(id);
-    await role.update({ name: dto.name });
-    this.audit.log({ userId: actor.id, action: 'update', entity: 'role', entityId: id });
-    return role;
   }
 
   async setPermissions(id: number, dto: SetRolePermissionsDto, actor: AuthUser) {

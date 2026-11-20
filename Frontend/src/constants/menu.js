@@ -23,7 +23,6 @@ import {
   NotebookPen,
   Receipt,
   ScrollText,
-  Trash2,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -49,7 +48,6 @@ export const MENU = [
       { label: 'Promotion', path: '/students/promotion', icon: ArrowUpCircle, permission: 'students.promote' },
       { label: 'Certificates', path: '/students/certificates', icon: ScrollText, permission: 'students.certificates' },
       { label: 'Parents', path: '/students/parents', icon: Contact, permission: 'students.view' },
-      { label: 'Recycle Bin', path: '/students/recycle-bin', icon: Trash2, permission: 'students.delete', superAdminOnly: true },
     ],
   },
   {

@@ -129,7 +129,6 @@ export class FeeLedgerService {
     @InjectModel(FeeInstallment) private readonly installments: typeof FeeInstallment,
     @InjectModel(FeeStructure) private readonly structures: typeof FeeStructure,
     @InjectModel(FeeConcession) private readonly concessions: typeof FeeConcession,
-    @InjectModel(FeePayment) private readonly payments: typeof FeePayment,
     @InjectModel(FeePaymentItem) private readonly items: typeof FeePaymentItem,
     @InjectModel(StudentEnrollment) private readonly enrollments: typeof StudentEnrollment,
     @InjectModel(TransportRoute) private readonly routes: typeof TransportRoute,

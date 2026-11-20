@@ -12,13 +12,6 @@ export class CreateRoleDto {
   slug: string;
 }
 
-export class UpdateRoleDto {
-  @IsString()
-  @MinLength(2)
-  @MaxLength(50)
-  name: string;
-}
-
 export class SetRolePermissionsDto {
   @IsArray()
   @ArrayUnique()

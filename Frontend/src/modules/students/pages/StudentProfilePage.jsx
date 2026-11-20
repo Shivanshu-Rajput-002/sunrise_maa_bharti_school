@@ -283,7 +283,7 @@ export default function StudentProfilePage() {
       <ConfirmDialog
         open={deleting}
         title={`Delete ${s.name}?`}
-        message="Only for a wrong or duplicate admission. A student with fee receipts, attendance, marks or certificates cannot be deleted — use Status → Left. Deleted students can be restored from the Recycle Bin for 30 days."
+        message="Only for a wrong or duplicate admission. A student with fee receipts, attendance, marks or certificates cannot be deleted — use Status → Left."
         loading={d.isLoading}
         onConfirm={onDelete}
         onClose={() => setDeleting(false)}

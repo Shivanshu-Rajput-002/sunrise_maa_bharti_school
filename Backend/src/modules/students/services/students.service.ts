@@ -257,7 +257,7 @@ export class StudentsService {
   /**
    * Delete is only for a wrong / duplicate admission: super admin only, and only while the
    * student has no fee receipt, attendance, marks or certificate. Everyone else uses
-   * status (Left / TC issued). Deleted students go to the Recycle Bin (restorable).
+   * status (Left / TC issued). The row is soft-deleted (deleted_at), so it stays in the database.
    */
   async remove(id: number, actor: AuthUser) {
     if (actor.roleSlug !== SUPER_ADMIN_ROLE) throw new ForbiddenException('Only the super admin can delete a student. Use "Change status" → Left instead.');
@@ -268,45 +268,9 @@ export class StudentsService {
     if (used.length) {
       throw new BadRequestException(`${student.name} cannot be deleted because the school has records for this student (${used.join(', ')}). Use "Change status" → Left or issue a TC instead.`);
     }
-    await student.destroy(); // soft delete → Recycle Bin
+    await student.destroy(); // soft delete (row kept with deleted_at)
     this.audit.log({ userId: actor.id, action: 'delete', entity: 'student', entityId: id, meta: { name: student.name, admissionNo: student.admissionNo } });
     return { id };
-  }
-
-  /** Recycle Bin: students deleted in the last 30 days */
-  async recycleBin(actor: AuthUser) {
-    if (actor.roleSlug !== SUPER_ADMIN_ROLE) throw new ForbiddenException('Only the super admin can open the Recycle Bin.');
-    const since = new Date(Date.now() - 30 * 86400_000);
-    const rows = await this.students.findAll({
-      paranoid: false,
-      where: { deletedAt: { [Op.gte]: since } },
-      attributes: ['id', 'name', 'admissionNo', 'fatherName', 'fatherMobile', 'deletedAt'],
-      include: [{ model: StudentEnrollment, attributes: ['id', 'sessionId'], include: [{ model: SchoolClass, attributes: ['name'] }, { model: Section, attributes: ['name'] }] }],
-      order: [['deletedAt', 'DESC']],
-    });
-    return rows.map((s) => {
-      const e = [...(s.enrollments ?? [])].sort((a, b) => b.sessionId - a.sessionId)[0];
-      const deletedAt = s.getDataValue('deletedAt') as Date;
-      return {
-        id: s.id,
-        name: s.name,
-        admissionNo: s.admissionNo,
-        fatherName: s.fatherName,
-        fatherMobile: s.fatherMobile,
-        className: e ? `${e.schoolClass?.name ?? ''}${e.section ? '-' + e.section.name : ''}` : '',
-        deletedAt,
-        daysLeft: Math.max(0, 30 - Math.floor((Date.now() - new Date(deletedAt).getTime()) / 86400_000)),
-      };
-    });
-  }
-
-  async restore(id: number, actor: AuthUser) {
-    if (actor.roleSlug !== SUPER_ADMIN_ROLE) throw new ForbiddenException('Only the super admin can restore a student.');
-    const s = await this.students.findByPk(id, { paranoid: false });
-    if (!s || !s.getDataValue('deletedAt')) throw new NotFoundException('This student is not in the Recycle Bin');
-    await s.restore();
-    this.audit.log({ userId: actor.id, action: 'restore', entity: 'student', entityId: id, meta: { name: s.name, admissionNo: s.admissionNo } });
-    return { id, name: s.name };
   }
 
   /** Re-number a class/section 1..n by name or admission number */

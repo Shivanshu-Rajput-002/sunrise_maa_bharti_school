@@ -26,7 +26,6 @@ const StudentImportPage = lazy(() => import('../../modules/students/pages/Studen
 const RollNumbersPage = lazy(() => import('../../modules/students/pages/RollNumbersPage'));
 const PromotionPage = lazy(() => import('../../modules/students/pages/PromotionPage'));
 const CertificatesPage = lazy(() => import('../../modules/students/pages/CertificatesPage'));
-const RecycleBinPage = lazy(() => import('../../modules/students/pages/RecycleBinPage'));
 const ParentsPage = lazy(() => import('../../modules/students/pages/ParentsPage'));
 const AdmitCardsPage = lazy(() => import('../../modules/exams/pages/AdmitCardsPage'));
 const StaffPage = lazy(() => import('../../modules/staff/pages/StaffPage'));
@@ -101,7 +100,6 @@ export default function AppRoutes() {
             <Route path="/students/promotion" element={guard('students.promote', <PromotionPage />)} />
             <Route path="/students/certificates" element={guard('students.certificates', <CertificatesPage />)} />
             <Route path="/students/parents" element={guard('students.view', <ParentsPage />)} />
-            <Route path="/students/recycle-bin" element={guard('students.delete', <RecycleBinPage />)} />
             <Route path="/students/:id" element={guard('students.view', <StudentProfilePage />)} />
             <Route path="/students/:id/edit" element={guard('students.update', <StudentFormPage key="edit" />)} />
 

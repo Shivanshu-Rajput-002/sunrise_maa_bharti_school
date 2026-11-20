@@ -34,7 +34,7 @@ export default function Sidebar() {
   const dispatch = useDispatch();
   const perms = useSelector(selectPermissions);
   const isSuperAdmin = useSelector(selectUser)?.role?.slug === 'super_admin';
-  // superAdminOnly items (e.g. Recycle Bin) are hidden from every other role
+  // superAdminOnly items are hidden from every other role
   const allowed = (i) => hasPermission(perms, i.permission) && (!i.superAdminOnly || isSuperAdmin);
   const { sidebarCollapsed, mobileNavOpen } = useSelector((s) => s.ui);
   const closeMobile = () => dispatch(setMobileNav(false));

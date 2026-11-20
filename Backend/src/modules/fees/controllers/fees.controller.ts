@@ -163,10 +163,4 @@ export class FeesController {
     res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': 'inline; filename="fee-due-slips.pdf"', 'Cache-Control': 'no-store' });
     res.end(pdf);
   }
-
-  @Get('summary')
-  @Permissions('fees.view')
-  summary(@Scope() s: RequestScope) {
-    return this.collection.summary(s);
-  }
 }

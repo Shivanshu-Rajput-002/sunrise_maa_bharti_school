@@ -85,7 +85,6 @@ export const opsApi = baseApi.injectEndpoints({
     getStaffDay: b.query(q('/staff/attendance', ['StaffAttendance'])),
     markStaff: b.mutation(m('PUT', '/staff/attendance', ['StaffAttendance', 'Dashboard'])),
     getStaffRegister: b.query(q('/staff/attendance/register', ['StaffAttendance'])),
-    getStaffSettings: b.query(q('/staff/settings', ['StaffAttendance'])),
     saveStaffSettings: b.mutation(m('PUT', '/staff/settings', ['StaffAttendance', 'Dashboard'])),
 
     // ---------- exams ----------
@@ -121,8 +120,6 @@ export const opsApi = baseApi.injectEndpoints({
     setParentActive: b.mutation(m('PATCH', (a) => `/students/parents/${a.id}/active`, ['Parents', 'User'])),
 
     // ---------- parent portal ----------
-    getRecycleBin: b.query({ query: () => ({ url: '/students/recycle-bin/list' }), providesTags: ['Student'], keepUnusedDataFor: 0 }),
-    restoreStudent: b.mutation(m('POST', (a) => `/students/${a.id}/restore`, ['Student', 'Dashboard', 'Parents'])),
     getChildren: b.query(q('/portal/children', ['Portal'])),
     getChildFees: b.query(q((id) => `/portal/children/${id}/fees`, ['Portal'])),
     getChildAttendance: b.query(q((id) => `/portal/children/${id}/attendance`, ['Portal'])),
@@ -146,13 +143,12 @@ export const {
   useGetAttendanceSheetQuery, useMarkAttendanceMutation, useGetRegisterQuery, useGetHolidaysQuery, useCreateHolidayMutation,
   useDeleteHolidayMutation, useGetDevicesQuery, useCreateDeviceMutation, useToggleDeviceMutation, useDeleteDeviceMutation,
   useGetStaffQuery, useCreateStaffMutation, useUpdateStaffMutation, useGetStaffDayQuery, useMarkStaffMutation,
-  useGetStaffRegisterQuery, useGetStaffSettingsQuery, useSaveStaffSettingsMutation,
+  useGetStaffRegisterQuery, useSaveStaffSettingsMutation,
   useGetExamsQuery, useCreateExamMutation, useUpdateExamMutation, useDeleteExamMutation, useGetScheduleQuery, useSaveScheduleMutation,
   useGetMarksQuery, useSaveMarksMutation, useGetResultQuery, useGetMarksheetExtrasQuery, useSaveMarksheetExtrasMutation, useSavePrintSettingsMutation,
   useGetNoticesQuery, useCreateNoticeMutation, useUpdateNoticeMutation, useDeleteNoticeMutation,
   useGetCertificateRegisterQuery, useGetCertificatesQuery, useIssueCertificateMutation, useGetParentAccountsQuery, useLinkParentMutation, useUnlinkParentMutation,
   useGetParentsQuery, useUpdateParentLoginMutation, useBulkParentLoginsMutation, useResetParentPasswordMutation, useSetParentActiveMutation,
-  useGetRecycleBinQuery, useRestoreStudentMutation,
   useGetChildrenQuery, useGetChildFeesQuery, useGetChildAttendanceQuery, useGetChildResultsQuery, useGetChildExamsQuery,
   useGetPortalNoticesQuery, useGetPortalBusesQuery,
 } = opsApi;

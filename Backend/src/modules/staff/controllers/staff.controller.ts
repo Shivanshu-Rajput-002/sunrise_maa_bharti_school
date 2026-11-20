@@ -40,12 +40,6 @@ export class StaffController {
     return this.staff.register(q.month);
   }
 
-  @Get('settings')
-  @Permissions('staff.view')
-  settings() {
-    return this.staff.settingsGet();
-  }
-
   @Put('settings')
   @Permissions('staff.manage')
   saveSettings(@Body() dto: StaffSettingsDto, @CurrentUser() u: AuthUser) {

@@ -45,10 +45,3 @@ export function friendlyError(error) {
   if (body?.ref) message = `${message} (Ref: ${body.ref})`;
   return { status, message, errors: Array.isArray(body?.errors) ? body.errors : undefined, ref: body?.ref, data: body };
 }
-
-/** For catch blocks that may receive anything (Error, string, API error) */
-export function errorText(e, fallback = 'Something went wrong. Please try again.') {
-  if (!e) return fallback;
-  if (typeof e === 'string') return e;
-  return e.message || fallback;
-}

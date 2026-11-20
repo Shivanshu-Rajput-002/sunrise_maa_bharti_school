@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/sequelize';
 import { createHash, randomBytes } from 'crypto';
-import { Op } from 'sequelize';
 import { ALL_PERMISSIONS, SUPER_ADMIN_ROLE } from '../../../common/constants';
 import { AuthUser } from '../../../common/interfaces/request-context';
 import { hashPassword, verifyPassword } from '../../../common/utils/password';
@@ -108,11 +107,6 @@ export class AuthService {
     await this.tokens.update({ revokedAt: new Date() }, { where: { userId: user.id, revokedAt: null } });
     this.audit.log({ userId: user.id, action: 'change_password', entity: 'user', entityId: user.id });
     return { ok: true };
-  }
-
-  /** Housekeeping: drop expired / long-revoked tokens */
-  purgeExpired() {
-    return this.tokens.destroy({ where: { expiresAt: { [Op.lt]: new Date() } } });
   }
 
   // ---------- helpers ----------

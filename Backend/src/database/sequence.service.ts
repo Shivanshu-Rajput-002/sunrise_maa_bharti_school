@@ -24,12 +24,4 @@ export class SequenceService {
     ];
     return Number(row.v);
   }
-
-  /** Never go below an existing max (e.g. after manual numbers were entered) */
-  async ensureAtLeast(key: string, value: number, transaction?: Transaction) {
-    await this.sequelize.query(
-      'INSERT INTO sequences (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = GREATEST(`value`, VALUES(`value`))',
-      { replacements: [key, value], transaction },
-    );
-  }
 }

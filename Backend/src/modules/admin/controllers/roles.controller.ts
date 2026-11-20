@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser, Permissions, SkipScope } from '../../../common/decorators';
 import type { AuthUser } from '../../../common/interfaces/request-context';
-import { AuditQueryDto, CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from '../dto/role.dto';
+import { AuditQueryDto, CreateRoleDto, SetRolePermissionsDto } from '../dto/role.dto';
 import { AuditService } from '../services/audit.service';
 import { RolesService } from '../services/roles.service';
 
@@ -29,12 +29,6 @@ export class RolesController {
   @Permissions('roles.create')
   create(@Body() dto: CreateRoleDto, @CurrentUser() actor: AuthUser) {
     return this.roles.create(dto, actor);
-  }
-
-  @Patch('roles/:id')
-  @Permissions('roles.update')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRoleDto, @CurrentUser() actor: AuthUser) {
-    return this.roles.update(id, dto, actor);
   }
 
   @Put('roles/:id/permissions')

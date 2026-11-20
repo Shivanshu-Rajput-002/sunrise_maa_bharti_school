@@ -4,7 +4,6 @@ import { Op, WhereOptions } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { AuthUser, RequestScope } from '../../../common/interfaces/request-context';
 import { toMoney } from '../../../common/utils/money';
-import { AcademicSession } from '../../academic/entities/academic-session.entity';
 import { Medium } from '../../academic/entities/medium.entity';
 import { SchoolClass } from '../../academic/entities/school-class.entity';
 import { Section } from '../../academic/entities/section.entity';
@@ -28,7 +27,6 @@ export class ExamsService {
     @InjectModel(ExamSchedule) private readonly schedules: typeof ExamSchedule,
     @InjectModel(ExamMark) private readonly marks: typeof ExamMark,
     @InjectModel(StudentEnrollment) private readonly enrollments: typeof StudentEnrollment,
-    @InjectModel(AcademicSession) private readonly sessions: typeof AcademicSession,
     private readonly settings: SettingsService,
     private readonly audit: AuditService,
     private readonly sequelize: Sequelize,

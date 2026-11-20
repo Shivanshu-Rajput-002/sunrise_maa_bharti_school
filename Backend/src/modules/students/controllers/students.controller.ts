@@ -162,18 +162,6 @@ export class StudentsController {
     return this.students.updateStatus(id, dto, scope, u);
   }
 
-  @Get('recycle-bin/list')
-  @Permissions('students.delete')
-  recycleBin(@CurrentUser() u: AuthUser) {
-    return this.students.recycleBin(u);
-  }
-
-  @Post(':id/restore')
-  @Permissions('students.delete')
-  restore(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
-    return this.students.restore(id, u);
-  }
-
   @Delete(':id')
   @Permissions('students.delete')
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {

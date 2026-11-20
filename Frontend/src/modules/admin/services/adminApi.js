@@ -22,10 +22,6 @@ export const adminApi = baseApi.injectEndpoints({
     getRoles: b.query({ query: () => ({ url: r.roles }), providesTags: ['Role'] }),
     getPermissionCatalogue: b.query({ query: () => ({ url: r.permissions }), providesTags: ['Permission'] }),
     createRole: b.mutation({ query: (data) => ({ url: r.roles, method: 'POST', data }), invalidatesTags: ['Role'] }),
-    updateRole: b.mutation({
-      query: ({ id, ...data }) => ({ url: r.role(id), method: 'PATCH', data }),
-      invalidatesTags: ['Role'],
-    }),
     setRolePermissions: b.mutation({
       query: ({ id, permissions }) => ({ url: r.rolePermissions(id), method: 'PUT', data: { permissions } }),
       invalidatesTags: ['Role'],
@@ -47,7 +43,6 @@ export const {
   useGetRolesQuery,
   useGetPermissionCatalogueQuery,
   useCreateRoleMutation,
-  useUpdateRoleMutation,
   useSetRolePermissionsMutation,
   useDeleteRoleMutation,
 } = adminApi;

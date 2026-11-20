@@ -50,10 +50,6 @@ export class StaffService {
   }
 
   // ---------------------------------------------------------------- attendance
-  async settingsGet() {
-    return this.settings.get('staff');
-  }
-
   async settingsSet(lateAfter: string, actor: AuthUser) {
     return this.settings.set('staff', { lateAfter }, actor);
   }

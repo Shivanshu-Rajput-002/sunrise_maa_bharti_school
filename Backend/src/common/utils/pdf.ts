@@ -91,20 +91,6 @@ export function table(doc: Doc, x: number, y: number, columns: Column[], rows: (
   return y;
 }
 
-/** Label: value pairs in a grid */
-export function keyValues(doc: Doc, x: number, y: number, width: number, pairs: [string, string][], cols = 2, fontSize = 9.5) {
-  const colW = width / cols;
-  let maxY = y;
-  pairs.forEach(([k, v], i) => {
-    const cx = x + (i % cols) * colW;
-    const cy = y + Math.floor(i / cols) * (fontSize + 8);
-    doc.font('Helvetica-Bold').fontSize(fontSize).fillColor('#334155').text(`${k}:`, cx, cy, { continued: true });
-    doc.font('Helvetica').fillColor('#0f172a').text(` ${v || '-'}`, { width: colW - 6, lineBreak: false, ellipsis: true });
-    maxY = Math.max(maxY, cy + fontSize + 8);
-  });
-  return maxY;
-}
-
 export const fmtDate = (d?: string | Date | null) => {
   if (!d) return '-';
   const dt = new Date(d);

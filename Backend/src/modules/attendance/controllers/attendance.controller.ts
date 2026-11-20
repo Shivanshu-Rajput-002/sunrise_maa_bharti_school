@@ -46,18 +46,6 @@ export class AttendanceController {
     return this.attendance.register(q, s);
   }
 
-  @Get('today')
-  @Permissions('attendance.view')
-  today(@Scope() s: RequestScope) {
-    return this.attendance.today(s);
-  }
-
-  @Get('student/:enrollmentId')
-  @Permissions('attendance.view')
-  student(@Param('enrollmentId', ParseIntPipe) id: number, @Scope() s: RequestScope) {
-    return this.attendance.studentSummary(id, s.sessionId);
-  }
-
   @Post('import')
   @Permissions('attendance.upload')
   @UseInterceptors(
